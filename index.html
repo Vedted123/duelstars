@@ -254,6 +254,30 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .timing-zone { position: absolute; left: 43%; width: 14%; top: 0; bottom: 0; background: rgba(114,199,141,.5); }
 .timing-marker { position: absolute; top: 2px; bottom: 2px; width: 7px; border-radius: 6px; background: var(--gold-2); box-shadow: 0 0 12px rgba(255,242,168,.7); transform: translateX(-50%); }
 .timing-hit-button { width: 100%; min-height: 58px; color: #211b06; background: var(--gold); }
+.wire-grid { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(70px, 1fr)); gap: 10px; }
+.wire-node { min-height: 62px; font-size: 24px; background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.14); }
+.wire-node.selected { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(240,201,75,.14); }
+.wire-node.matched { color: #152419; background: var(--success); }
+.dial-grid { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.dial-button { min-height: 105px; display: grid; place-items: center; gap: 4px; background: radial-gradient(circle, rgba(240,201,75,.18), rgba(255,255,255,.06)); border: 2px solid rgba(240,201,75,.25); font-size: 30px; }
+.dial-button small { color: var(--muted); font-size: 11px; }
+.balance-wrap { width: 100%; display: grid; gap: 12px; }
+.balance-total { padding: 14px; border-radius: 12px; background: rgba(255,255,255,.07); font-size: 25px; font-weight: 900; }
+.balance-weights { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.balance-weight.active { color: #211b06; background: var(--gold); }
+.sweep-board { position: relative; width: min(430px, 82vw); height: 240px; overflow: hidden; border-radius: 14px; background: linear-gradient(145deg, rgba(121,88,45,.42), rgba(57,40,24,.55)); border: 1px solid rgba(255,255,255,.12); }
+.dust-spot { position: absolute; width: 44px; height: 44px; padding: 0; border-radius: 50%; background: rgba(210,194,153,.24); border: 2px dashed rgba(255,242,168,.62); font-size: 20px; }
+.lights-grid { width: min(360px, 82vw); display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.light-tile { aspect-ratio: 1; padding: 0; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); font-size: 25px; }
+.light-tile.on { color: #241c05; background: var(--gold); box-shadow: 0 0 20px rgba(240,201,75,.35); }
+.seance-card { width: min(92vw, 520px); padding: 26px; text-align: center; }
+.seance-card h2 { margin: 6px 0; font-family: Georgia, serif; font-size: 32px; }
+.seance-transcript { min-height: 92px; display: grid; gap: 8px; margin: 16px 0; padding: 14px; text-align: left; border-radius: 12px; background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.09); }
+.seance-line { padding: 8px 10px; border-radius: 9px; background: rgba(255,255,255,.06); }
+.seance-line strong { color: var(--gold-2); }
+.seance-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.seance-form input { margin: 0; }
+.seance-note { color: var(--muted); font-size: 12px; }
 
 @media (max-width: 760px) {
   .hud { grid-template-columns: 1fr auto; font-size: 12px; }
@@ -350,7 +374,7 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
               <option value="King">King</option>
               <option value="Advisor">Advisor</option>
               <option value="Chef">Chef</option>
-              <option value="Alchemist">Alchemist</option>
+              <option value="Sorcerer">Sorcerer</option>
             </select>
           </label>
           <button id="saveOwnerRoleButton" class="small-button">Save</button>
@@ -435,6 +459,19 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
       </div>
     </section>
 
+    <section id="seanceOverlay" class="screen-overlay hidden">
+      <div class="panel seance-card">
+        <div class="eyebrow">WHISPER BEYOND THE VEIL</div>
+        <h2 id="seanceTitle">Commune with the dead</h2>
+        <p id="seanceInstruction" class="seance-note"></p>
+        <div id="seanceTranscript" class="seance-transcript"></div>
+        <form id="seanceForm" class="seance-form">
+          <input id="seanceInput" maxlength="60" autocomplete="off" placeholder="Up to three words" />
+          <button id="seanceSendButton" class="primary" type="submit">Send</button>
+        </form>
+        <button id="closeSeanceButton" class="secondary hidden" type="button">Close</button>
+      </div>
+    </section>
 
     <section id="taskGameOverlay" class="screen-overlay hidden">
       <div class="panel task-game-card">
@@ -547,9 +584,13 @@ const LOBBY_SIZE = { width: 1200, height: 700 };
 const WORLD_SIZE = { width: 1900 * MAP_SCALE, height: 1200 * MAP_SCALE };
 const LOBBY_PAD = { x: 480, y: 245, w: 240, h: 175 };
 const LEVER = { x: 950 * MAP_SCALE, y: 570 * MAP_SCALE, radius: 34 };
+const MAIN_ROOM_SPAWNS = [
+  [820, 500], [900, 480], [990, 490], [1080, 510], [850, 620],
+  [940, 650], [1030, 625], [1120, 620], [900, 735], [1020, 735],
+].map(([x, y]) => ({ x: x * MAP_SCALE, y: y * MAP_SCALE }));
 const ROLE_DECK = [
   "Peasant", "Peasant", "Peasant", "Peasant",
-  "Chameleon", "Mason", "King", "Advisor", "Chef", "Alchemist",
+  "Chameleon", "Mason", "King", "Advisor", "Chef", "Sorcerer",
 ];
 const OWNER_USERNAME = "sinister_mark405";
 const EMERGENCY_MEETING_COOLDOWN_MS = 60_000;
@@ -565,7 +606,7 @@ const PLAYER_SHAPES = [
   { id: "heart", symbol: "♥", label: "Heart" },
   { id: "spade", symbol: "♠", label: "Spade" },
 ];
-const TASKER_ROLES = new Set(["Peasant", "Mason", "Advisor", "Chef", "Alchemist"]);
+const TASKER_ROLES = new Set(["Peasant", "Mason", "Advisor", "Chef", "Sorcerer"]);
 const SEWER_ROLES = new Set(["Mason", "Chameleon"]);
 const PLAYER_COLORS = [
   "#c95656", "#4c86c6", "#65a76b", "#bd73bd", "#d79b45",
@@ -634,7 +675,7 @@ const TASKS = [
   { id: "turn_winch", name: "Turn the dungeon winch", icon: "⚙", room: "dungeon", x: 215, y: 960 },
   { id: "lock_cells", name: "Pick the dungeon lock", icon: "🔒", room: "dungeon", x: 445, y: 1040 },
   { id: "mix_tonic", name: "Mix a healing tonic", icon: "⚗", room: "alchemy", x: 845, y: 960 },
-  { id: "sort_herbs", name: "Sort the alchemist's herbs", icon: "🌿", room: "alchemy", x: 1060, y: 1050 },
+  { id: "sort_herbs", name: "Sort the sorcerer's herbs", icon: "🌿", room: "alchemy", x: 1060, y: 1050 },
   { id: "draw_water", name: "Draw water from the well", icon: "🪣", room: "courtyard", x: 1480, y: 970 },
   { id: "trim_hedges", name: "Trim the thorn hedges", icon: "✂", room: "courtyard", x: 1700, y: 1040 },
 ];
@@ -675,15 +716,15 @@ function makeTaskAssignment(baseId, serial) {
 const TASK_GAME_TYPES = {
   repair_shield: "shield",
   lock_cells: "lockpick",
-  polish_crown: "memory",
-  light_braziers: "memory",
-  restore_glass: "memory",
-  mix_tonic: "memory",
+  polish_crown: "dial",
+  light_braziers: "lights",
+  restore_glass: "wire",
+  mix_tonic: "balance",
   decode_runes: "sequence",
   align_banners: "sequence",
-  stack_scrolls: "sequence",
+  stack_scrolls: "sort",
   set_banquet: "sequence",
-  sort_herbs: "sequence",
+  sort_herbs: "memory",
   trim_hedges: "sequence",
   stoke_oven: "timing",
   knead_bread: "timing",
@@ -712,8 +753,8 @@ const ROLE_INFO = {
   Chef: {
     description: "Complete duties. Once per match, revive one person killed by the Chameleon.",
   },
-  Alchemist: {
-    description: "Complete duties. Fire five alchemical darts per match; each dart stuns a nearby player for five seconds.",
+  Sorcerer: {
+    description: "Complete duties and fire five stun darts. Once per match, stand beside a body to exchange one private three-word message with that spirit.",
   },
 };
 
@@ -726,6 +767,7 @@ const state = {
   players: {},
   bodies: {},
   meeting: null,
+  seance: null,
   startVotes: {},
   secret: null,
   allSecrets: {},
@@ -970,7 +1012,7 @@ function syncRestrictedUi(previousOwn = null, own = getMyPlayer()) {
   if (stunUntil > Date.now() && stunUntil !== state.noticedStunUntil) {
     state.noticedStunUntil = stunUntil;
     closeTaskGame(false);
-    showToast("You were stunned by an alchemist dart for 5 seconds", 3000);
+    showToast("You were stunned by an sorcerer dart for 5 seconds", 3000);
   }
 
   if (previousOwn?.alive && own && !own.alive) {
@@ -1165,6 +1207,7 @@ function beginRoomListeners() {
       }
     }
     syncRestrictedUi(previousOwn, own);
+    if (Boolean(previousOwn?.alive) !== Boolean(own?.alive)) attachChatListener();
     renderLobbyPanel();
     renderMeetingPlayers();
     maybeClaimHost();
@@ -1179,9 +1222,13 @@ function beginRoomListeners() {
   state.listeners.push(onValue(ref(db, roomPath("meeting")), (snapshot) => {
     state.meeting = snapshot.val() || null;
     renderMeetingPlayers();
-    if (state.meeting && currentPhase() === "meeting" && getMyPlayer()?.alive) openChat(true);
-    else syncRestrictedUi();
+    syncRestrictedUi();
     maybeHostActions();
+  }));
+
+  state.listeners.push(onValue(ref(db, roomPath("seance")), (snapshot) => {
+    state.seance = snapshot.val() || null;
+    renderSeanceOverlay();
   }));
 
   state.listeners.push(onValue(ref(db, roomPath("startVotes")), (snapshot) => {
@@ -1213,6 +1260,11 @@ function handleMetaChange() {
       state.tasksVisible = false;
       state.ownerRevealActive = false;
       closeTaskGame(false);
+    }
+    if (phase === "meeting" || previousPhase === "meeting") {
+      state.chatOpen = false;
+      setVisible("chatPanel", false);
+      setVisible("chatToggle", canAccessChat());
     }
     state.lastPhase = phase;
   }
@@ -1252,6 +1304,7 @@ function handleMetaChange() {
   renderRolePanel();
   renderTaskPanel();
   renderLobbyPanel();
+  renderSeanceOverlay();
 }
 
 async function maybeClaimHost() {
@@ -1299,6 +1352,13 @@ function currentChatLabel() {
 
 function attachChatListener() {
   if (!state.joined || !state.roomId) return;
+  if (currentPhase() !== "lobby" && !getMyPlayer()?.alive) {
+    state.chatUnsub?.();
+    state.chatUnsub = null;
+    state.chatChannelKey = "";
+    $("chatMessages").replaceChildren();
+    return;
+  }
   const key = chatPath();
   if (key === state.chatChannelKey && state.chatUnsub) {
     $("chatChannelLabel").textContent = currentChatLabel();
@@ -1497,10 +1557,7 @@ async function startGame(realParticipants) {
     const updates = {};
     let tasksIssued = 0;
 
-    const spawnPoints = [
-      [820, 500], [900, 480], [990, 490], [1080, 510], [850, 620],
-      [940, 650], [1030, 625], [1120, 620], [900, 735], [1020, 735],
-    ].map(([x, y]) => [x * MAP_SCALE, y * MAP_SCALE]);
+    const spawnPoints = MAIN_ROOM_SPAWNS;
 
     allIds.forEach((id, index) => {
       const role = roles[index];
@@ -1515,7 +1572,7 @@ async function startGame(realParticipants) {
       const existing = state.players[id] || {};
       const botName = botNameFor(id, index);
       const botCustomization = defaultCustomization(id);
-      const [x, y] = spawnPoints[index];
+      const { x, y } = spawnPoints[index];
 
       updates[`${roomPath(`players/${id}`)}`] = {
         ...existing,
@@ -1539,7 +1596,8 @@ async function startGame(realParticipants) {
         mapReadyAt: Date.now() + 4000,
         invisibleUntil: 0,
         reviveUsed: false,
-        dartsRemaining: role === "Alchemist" ? 5 : 0,
+        dartsRemaining: role === "Sorcerer" ? 5 : 0,
+        seanceUsed: false,
         stunnedUntil: 0,
         lastSeen: Date.now(),
       };
@@ -1558,6 +1616,7 @@ async function startGame(realParticipants) {
     updates[roomPath("startVotes")] = null;
     updates[roomPath("bodies")] = null;
     updates[roomPath("meeting")] = null;
+    updates[roomPath("seance")] = null;
     updates[roomPath("meta")] = {
       ...state.meta,
       state: "game",
@@ -1651,11 +1710,17 @@ function renderRolePanel() {
     addButton("E", "Use nearby sewer", "Near grate", useAbilityOne, {
       disabled: !me.alive || stunned || currentPhase() !== "game",
     });
-  } else if (role === "Alchemist") {
+  } else if (role === "Sorcerer") {
     const darts = Number(me.dartsRemaining ?? 5);
     addButton("E", "Fire stun dart", `${darts} dart${darts === 1 ? "" : "s"} left`, useAbilityOne, {
       ready: darts > 0,
       disabled: !me.alive || stunned || currentPhase() !== "game" || darts <= 0,
+    });
+    const nearbySpirit = nearestBody(state.localPos, 76, true);
+    const seanceBusy = Boolean(state.seance && state.seance.phase !== "complete");
+    addButton("R", "Commune with dead", me.seanceUsed ? "Used" : (nearbySpirit ? "Spirit nearby" : "Stand by a body"), useAbilityTwo, {
+      ready: !me.seanceUsed && Boolean(nearbySpirit) && !seanceBusy,
+      disabled: !me.alive || stunned || currentPhase() !== "game" || me.seanceUsed || !nearbySpirit || seanceBusy,
     });
   } else if (role === "King") {
     addButton("E", "Royal Decree", currentPhase() === "meeting" ? "Choose target" : "Council only", useAbilityOne, {
@@ -1706,7 +1771,7 @@ function useAbilityOne() {
   else if (role === "Advisor") useAdvisorMap();
   else if (role === "Chef") useChefRevive();
   else if (role === "Mason") tryOpenNearbySewer();
-  else if (role === "Alchemist") shootAlchemistDart(state.uid);
+  else if (role === "Sorcerer") shootSorcererDart(state.uid);
   else if (role === "King" && currentPhase() === "meeting" && !state.meeting?.decreeBy) {
     state.decreeMode = true;
     showToast("Royal Decree ready — choose a player to silence");
@@ -1718,6 +1783,7 @@ function useAbilityTwo() {
   const me = getMyPlayer();
   if (!me?.alive || (me.stunnedUntil || 0) > Date.now()) return;
   if (state.secret?.role === "Chameleon") useInvisibility();
+  else if (state.secret?.role === "Sorcerer") beginSeance();
 }
 
 function toggleControlsPanel() {
@@ -1872,6 +1938,11 @@ function renderCurrentTaskGame() {
   else if (game.type === "lockpick") renderLockpickPuzzle();
   else if (game.type === "memory") renderMemoryPuzzle();
   else if (game.type === "timing") renderTimingPuzzle();
+  else if (game.type === "wire") renderWirePuzzle();
+  else if (game.type === "dial") renderDialPuzzle();
+  else if (game.type === "balance") renderBalancePuzzle();
+  else if (game.type === "sort") renderSweepPuzzle();
+  else if (game.type === "lights") renderLightsPuzzle();
   else renderSequencePuzzle();
 }
 
@@ -2073,6 +2144,185 @@ function renderTimingPuzzle() {
   }, 28);
 }
 
+function renderWirePuzzle() {
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  const pairSymbols = shuffle(PUZZLE_SYMBOLS).slice(0, 3);
+  game.wires = shuffle(pairSymbols.flatMap((symbol) => [symbol, symbol])).map((symbol, index) => ({ symbol, index, matched: false }));
+  game.selectedWire = null;
+  game.matches = 0;
+  $("taskGameInstruction").textContent = "Connect the three matching rune pairs.";
+  const grid = document.createElement("div");
+  grid.className = "wire-grid";
+  game.wires.forEach((wire) => {
+    const button = makePuzzleButton(wire.symbol, () => {
+      if (wire.matched || !state.taskGame) return;
+      if (!game.selectedWire) {
+        game.selectedWire = { wire, button };
+        button.classList.add("selected");
+        setTaskGameStatus("Choose the matching rune");
+        return;
+      }
+      const first = game.selectedWire;
+      first.button.classList.remove("selected");
+      if (first.wire.index !== wire.index && first.wire.symbol === wire.symbol) {
+        first.wire.matched = wire.matched = true;
+        first.button.classList.add("matched");
+        button.classList.add("matched");
+        first.button.disabled = button.disabled = true;
+        game.matches += 1;
+        setTaskGameStatus(`${game.matches} / 3 rune pairs connected`);
+        if (game.matches >= 3) finishTaskPuzzle();
+      } else {
+        setTaskGameStatus("Those runes do not match");
+      }
+      game.selectedWire = null;
+    }, "wire-node");
+    grid.appendChild(button);
+  });
+  area.appendChild(grid);
+}
+
+function renderDialPuzzle() {
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  game.dialTargets = Array.from({ length: 3 }, () => Math.floor(Math.random() * 6));
+  game.dialValues = Array.from({ length: 3 }, () => Math.floor(Math.random() * 6));
+  if (game.dialValues.every((value, index) => value === game.dialTargets[index])) game.dialValues[0] = (game.dialValues[0] + 1) % 6;
+  $("taskGameInstruction").textContent = `Turn the dials to ${game.dialTargets.join(" — ")}.`;
+  const grid = document.createElement("div");
+  grid.className = "dial-grid";
+  const refresh = () => {
+    [...grid.children].forEach((button, index) => {
+      button.firstChild.textContent = String(game.dialValues[index]);
+      button.classList.toggle("correct", game.dialValues[index] === game.dialTargets[index]);
+    });
+    const matched = game.dialValues.filter((value, index) => value === game.dialTargets[index]).length;
+    setTaskGameStatus(`${matched} / 3 dials aligned`);
+    if (matched === 3) finishTaskPuzzle();
+  };
+  game.dialValues.forEach((value, index) => {
+    const button = document.createElement("button");
+    button.className = "dial-button";
+    const number = document.createElement("span");
+    number.textContent = String(value);
+    const hint = document.createElement("small");
+    hint.textContent = `Target ${game.dialTargets[index]}`;
+    button.append(number, hint);
+    button.addEventListener("click", () => {
+      game.dialValues[index] = (game.dialValues[index] + 1) % 6;
+      refresh();
+    });
+    grid.appendChild(button);
+  });
+  area.appendChild(grid);
+  refresh();
+}
+
+function renderBalancePuzzle() {
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  game.balanceTarget = 7 + Math.floor(Math.random() * 9);
+  game.balanceWeights = [1, 2, 3, 4, 5];
+  game.balanceActive = new Set();
+  $("taskGameInstruction").textContent = `Balance the cauldron at exactly ${game.balanceTarget} measures.`;
+  const wrap = document.createElement("div");
+  wrap.className = "balance-wrap";
+  const total = document.createElement("div");
+  total.className = "balance-total";
+  const weights = document.createElement("div");
+  weights.className = "balance-weights";
+  const refresh = () => {
+    const sum = [...game.balanceActive].reduce((value, index) => value + game.balanceWeights[index], 0);
+    total.textContent = `${sum} / ${game.balanceTarget}`;
+    setTaskGameStatus(sum > game.balanceTarget ? "Too heavy — remove a weight" : "Select weights for the exact measure");
+    if (sum === game.balanceTarget) finishTaskPuzzle();
+  };
+  game.balanceWeights.forEach((value, index) => {
+    const button = makePuzzleButton(`+${value}`, () => {
+      if (game.balanceActive.has(index)) game.balanceActive.delete(index);
+      else game.balanceActive.add(index);
+      button.classList.toggle("active", game.balanceActive.has(index));
+      refresh();
+    }, "balance-weight");
+    weights.appendChild(button);
+  });
+  wrap.append(total, weights);
+  area.appendChild(wrap);
+  refresh();
+}
+
+function renderSweepPuzzle() {
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  game.dustRemaining = 8;
+  $("taskGameInstruction").textContent = "Clean every dust mark from the scroll shelf.";
+  const board = document.createElement("div");
+  board.className = "sweep-board";
+  const spots = [
+    [8, 12], [38, 8], [70, 17], [20, 43], [55, 48], [82, 55], [9, 76], [62, 78],
+  ];
+  shuffle(spots).forEach(([left, top], index) => {
+    const spot = document.createElement("button");
+    spot.className = "dust-spot";
+    spot.textContent = "✦";
+    spot.style.left = `${left}%`;
+    spot.style.top = `${top}%`;
+    spot.style.transform = "translate(-50%, -50%)";
+    spot.addEventListener("click", () => {
+      spot.remove();
+      game.dustRemaining -= 1;
+      setTaskGameStatus(`${8 - game.dustRemaining} / 8 dust marks cleaned`);
+      if (game.dustRemaining <= 0) finishTaskPuzzle();
+    }, { once: true });
+    board.appendChild(spot);
+  });
+  area.appendChild(board);
+}
+
+function renderLightsPuzzle() {
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  game.lights = Array(9).fill(false);
+  const toggleAt = (index) => {
+    const row = Math.floor(index / 3);
+    const col = index % 3;
+    for (const [dr, dc] of [[0,0],[-1,0],[1,0],[0,-1],[0,1]]) {
+      const r = row + dr;
+      const c = col + dc;
+      if (r >= 0 && r < 3 && c >= 0 && c < 3) game.lights[r * 3 + c] = !game.lights[r * 3 + c];
+    }
+  };
+  const scramble = shuffle([0,1,2,3,4,5,6,7,8]).slice(0, 4);
+  scramble.forEach(toggleAt);
+  if (!game.lights.some(Boolean)) toggleAt(4);
+  $("taskGameInstruction").textContent = "Extinguish every brazier. Each press also changes its neighbors.";
+  const grid = document.createElement("div");
+  grid.className = "lights-grid";
+  const refresh = () => {
+    [...grid.children].forEach((button, index) => {
+      button.classList.toggle("on", game.lights[index]);
+      button.textContent = game.lights[index] ? "🔥" : "·";
+    });
+    const remaining = game.lights.filter(Boolean).length;
+    setTaskGameStatus(`${remaining} brazier${remaining === 1 ? "" : "s"} still lit`);
+    if (!remaining) finishTaskPuzzle();
+  };
+  game.lights.forEach((_, index) => {
+    const button = document.createElement("button");
+    button.className = "light-tile";
+    button.addEventListener("click", () => { toggleAt(index); refresh(); });
+    grid.appendChild(button);
+  });
+  area.appendChild(grid);
+  refresh();
+}
+
 $("closeTaskGameButton").addEventListener("click", () => closeTaskGame(true));
 
 function updateTaskHold(deltaMs) {
@@ -2204,12 +2454,12 @@ function nearestLivingTarget(actorId, maxDistance = 58, preferredTargetId = "") 
   return best <= maxDistance ? result : null;
 }
 
-async function shootAlchemistDart(shooterId = state.uid, preferredTargetId = "") {
+async function shootSorcererDart(shooterId = state.uid, preferredTargetId = "") {
   if (currentPhase() !== "game") return false;
   const shooter = state.players[shooterId];
   const role = shooterId === state.uid ? state.secret?.role : state.allSecrets[shooterId]?.role;
   const now = Date.now();
-  if (role !== "Alchemist" || !shooter?.alive || (shooter.stunnedUntil || 0) > now) return false;
+  if (role !== "Sorcerer" || !shooter?.alive || (shooter.stunnedUntil || 0) > now) return false;
   const displayedDarts = Number(shooter.dartsRemaining ?? 5);
   if (displayedDarts <= 0) {
     if (shooterId === state.uid) showToast("You have used all five darts");
@@ -2338,6 +2588,157 @@ async function useChefRevive() {
   showToast(`${body.victimName} has been revived`);
 }
 
+function wordsFromMessage(value) {
+  return String(value || "")
+    .replace(/[<>]/g, "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+function renderSeanceOverlay() {
+  const seance = state.seance;
+  const me = getMyPlayer();
+  const isSorcerer = Boolean(seance && state.uid === seance.sorcererId && me?.alive);
+  const isSpirit = Boolean(seance && state.uid === seance.deadId && !me?.alive);
+  const participant = isSorcerer || isSpirit;
+  if (!participant || currentPhase() !== "game") {
+    setVisible("seanceOverlay", false);
+    return;
+  }
+
+  setVisible("seanceOverlay", true);
+  const spiritName = state.players[seance.deadId]?.name || seance.deadName || "the spirit";
+  $("seanceTitle").textContent = isSorcerer ? `Commune with ${spiritName}` : "A Sorcerer calls to you";
+  const transcript = $("seanceTranscript");
+  transcript.replaceChildren();
+  const addLine = (speaker, message) => {
+    if (!message) return;
+    const line = document.createElement("div");
+    line.className = "seance-line";
+    const name = document.createElement("strong");
+    name.textContent = `${speaker}: `;
+    line.append(name, document.createTextNode(message));
+    transcript.appendChild(line);
+  };
+  addLine("Sorcerer", seance.sorcererMessage);
+  addLine("Spirit", seance.deadMessage);
+  if (!transcript.childNodes.length) transcript.textContent = "The veil is open. Speak carefully.";
+
+  const canSend = (isSorcerer && seance.phase === "sorcerer_message")
+    || (isSpirit && seance.phase === "dead_reply");
+  $("seanceForm").classList.toggle("hidden", !canSend);
+  $("closeSeanceButton").classList.toggle("hidden", seance.phase !== "complete");
+  if (canSend) {
+    $("seanceInput").placeholder = isSorcerer ? "Message: up to three words" : "Reply: up to three words";
+    $("seanceInstruction").textContent = isSorcerer
+      ? "Send one private message of no more than three words."
+      : "Only you and the Sorcerer can see this. Reply with no more than three words.";
+  } else if (seance.phase === "dead_reply") {
+    $("seanceInstruction").textContent = "Waiting for the spirit's three-word reply…";
+  } else {
+    $("seanceInstruction").textContent = "The exchange is complete. The veil has closed.";
+  }
+}
+
+async function beginSeance() {
+  const me = getMyPlayer();
+  if (state.secret?.role !== "Sorcerer" || !me?.alive || me.seanceUsed || currentPhase() !== "game") return;
+  if (state.seance && state.seance.phase !== "complete") {
+    showToast("Another séance is already active");
+    return;
+  }
+  const body = nearestBody(state.localPos, 76, true);
+  if (!body) {
+    showToast("Stand beside a fallen player's body");
+    return;
+  }
+  const dead = state.players[body.victimId];
+  if (!dead || dead.alive) {
+    showToast("That spirit is no longer available");
+    return;
+  }
+  const now = Date.now();
+  const seance = {
+    id: randomId("seance"),
+    sorcererId: state.uid,
+    deadId: body.victimId,
+    deadName: body.victimName || dead.name || "Spirit",
+    bodyId: body.id,
+    phase: "sorcerer_message",
+    createdAt: now,
+    expiresAt: now + 45000,
+    sorcererMessage: "",
+    deadMessage: "",
+  };
+  const updates = {};
+  updates[roomPath(`players/${state.uid}/seanceUsed`)] = true;
+  updates[roomPath("seance")] = seance;
+  await update(ref(db), updates);
+}
+
+async function submitSeanceMessage(event) {
+  event.preventDefault();
+  const seance = state.seance;
+  if (!seance) return;
+  const words = wordsFromMessage($("seanceInput").value);
+  if (!words.length || words.length > 3) {
+    showToast("Use no more than three words");
+    return;
+  }
+  const message = words.join(" ");
+  $("seanceInput").value = "";
+  if (state.uid === seance.sorcererId && seance.phase === "sorcerer_message") {
+    await update(ref(db, roomPath("seance")), {
+      sorcererMessage: message,
+      phase: "dead_reply",
+      messageAt: Date.now(),
+      expiresAt: Date.now() + 45000,
+    });
+    const spirit = state.players[seance.deadId];
+    if (spirit?.isBot) {
+      const replies = ["I saw shadows", "Trust the crown", "Watch the sewers", "Not the reporter"];
+      setTimeout(async () => {
+        const snapshot = await get(ref(db, roomPath("seance")));
+        const current = snapshot.val();
+        if (!current || current.id !== seance.id || current.phase !== "dead_reply") return;
+        await update(ref(db, roomPath("seance")), {
+          deadMessage: replies[Math.floor(Math.random() * replies.length)],
+          phase: "complete",
+          completedAt: Date.now(),
+          cleanupAt: Date.now() + 7000,
+        });
+      }, 900);
+    }
+  } else if (state.uid === seance.deadId && seance.phase === "dead_reply" && !getMyPlayer()?.alive) {
+    await update(ref(db, roomPath("seance")), {
+      deadMessage: message,
+      phase: "complete",
+      completedAt: Date.now(),
+      cleanupAt: Date.now() + 7000,
+    });
+  }
+}
+
+async function processSeanceHost() {
+  if (!isHost() || !state.seance) return;
+  const now = Date.now();
+  if (state.seance.phase !== "complete" && now >= Number(state.seance.expiresAt || Infinity)) {
+    await update(ref(db, roomPath("seance")), {
+      deadMessage: state.seance.deadMessage || "The spirit faded",
+      phase: "complete",
+      completedAt: now,
+      cleanupAt: now + 5000,
+    });
+  } else if (state.seance.phase === "complete" && now >= Number(state.seance.cleanupAt || Infinity)) {
+    await remove(ref(db, roomPath("seance")));
+  }
+}
+
+$("seanceForm").addEventListener("submit", submitSeanceMessage);
+$("closeSeanceButton").addEventListener("click", () => setVisible("seanceOverlay", false));
+
 async function reportNearbyBody() {
   const me = getMyPlayer();
   if (!me?.alive || currentPhase() !== "game") return;
@@ -2354,18 +2755,23 @@ async function initiateMeeting(reason, bodyId = null, callerId = state.uid) {
   if (currentPhase() !== "game" || !caller?.alive) return false;
   const now = Date.now();
   const cooldownRemaining = emergencyMeetingCooldownRemaining(now);
-  if (!bodyId && cooldownRemaining > 0) {
+  if (cooldownRemaining > 0) {
     if (callerId === state.uid) {
-      showToast(`The council lever is cooling down for ${Math.ceil(cooldownRemaining / 1000)} more second(s)`);
+      showToast(`Emergency meetings are locked for ${Math.ceil(cooldownRemaining / 1000)} more second(s)`);
     }
     return false;
   }
 
   const transaction = await runTransaction(ref(db, roomPath("meta")), (meta) => {
     if (!meta || meta.state !== "game") return;
+    const lastMeetingAt = Number(meta.lastMeetingAt || 0);
+    if (now - lastMeetingAt < EMERGENCY_MEETING_COOLDOWN_MS) return;
     return { ...meta, state: "meeting", lastMeetingAt: now, updatedAt: now };
   });
-  if (!transaction.committed) return false;
+  if (!transaction.committed) {
+    if (callerId === state.uid) showToast("Emergency meeting cooldown is still active");
+    return false;
+  }
 
   const meeting = {
     id: randomId("meeting"),
@@ -2381,6 +2787,7 @@ async function initiateMeeting(reason, bodyId = null, callerId = state.uid) {
   };
   const updates = {};
   updates[roomPath("meeting")] = meeting;
+  updates[roomPath("seance")] = null;
   if (bodyId) updates[roomPath(`bodies/${bodyId}/reported`)] = true;
   await update(ref(db), updates);
   await sendMessage(reason, { system: true, sender: "Castle Herald", uid: "system", channel: "game" });
@@ -2548,7 +2955,16 @@ async function processMeetingHost() {
         updates[roomPath("meta/state")] = "game";
         updates[roomPath("meta/lastMeetingAt")] = Date.now();
         updates[roomPath("meeting")] = null;
+        updates[roomPath("seance")] = null;
+        activePlayers().forEach((player, index) => {
+          const spawn = MAIN_ROOM_SPAWNS[index % MAIN_ROOM_SPAWNS.length];
+          updates[roomPath(`players/${player.id}/x`)] = spawn.x;
+          updates[roomPath(`players/${player.id}/y`)] = spawn.y;
+          updates[roomPath(`players/${player.id}/invisibleUntil`)] = 0;
+        });
         await update(ref(db), updates);
+        state.chatOpen = false;
+        setVisible("chatPanel", false);
         await checkWinConditions();
       }
     }
@@ -2642,6 +3058,7 @@ async function checkWinConditions() {
 
 async function endGame(winner, text) {
   if (!isHost() || currentPhase() === "ended") return;
+  await remove(ref(db, roomPath("seance"))).catch(() => {});
   await update(ref(db, roomPath("meta")), {
     state: "ended",
     winner,
@@ -2669,12 +3086,14 @@ async function resetToLobby() {
       updates[roomPath(`players/${id}/onPad`)] = false;
       updates[roomPath(`players/${id}/completedTasks`)] = null;
       updates[roomPath(`players/${id}/shape`)] = null;
+      updates[roomPath(`players/${id}/seanceUsed`)] = false;
       updates[roomPath(`players/${id}/x`)] = 590 + Math.random() * 100;
       updates[roomPath(`players/${id}/y`)] = 555 + Math.random() * 70;
     }
   }
   updates[roomPath("bodies")] = null;
   updates[roomPath("meeting")] = null;
+  updates[roomPath("seance")] = null;
   updates[roomPath("startVotes")] = null;
   updates[`roomSecrets/${state.roomId}`] = null;
   updates[roomPath("meta")] = {
@@ -2692,6 +3111,10 @@ function updateMovement(deltaSeconds) {
   if (!state.joined || !getMyPlayer()) return;
   const phase = currentPhase();
   if (phase === "meeting" || phase === "ended" || phase === "starting" || state.taskGame) return;
+  const activeSeanceParticipant = state.seance
+    && state.seance.phase !== "complete"
+    && (state.seance.sorcererId === state.uid || state.seance.deadId === state.uid);
+  if (activeSeanceParticipant) return;
   const me = getMyPlayer();
   if (phase === "game" && (!me.inMatch || me.spectator)) return;
   if (phase === "game" && (me.stunnedUntil || 0) > Date.now()) return;
@@ -2801,9 +3224,13 @@ function updateInteractionPrompt() {
       const task = nearestTask();
       const sewer = nearestSewer();
       if (body) {
-        text = state.secret?.role === "Chef" && !me.reviveUsed
-          ? `F: Report ${body.victimName}  •  E: Revive`
+        const cooldownRemaining = emergencyMeetingCooldownRemaining();
+        const reportText = cooldownRemaining > 0
+          ? `Report locked: ${Math.ceil(cooldownRemaining / 1000)}s`
           : `F: Report ${body.victimName}`;
+        if (state.secret?.role === "Chef" && !me.reviveUsed) text = `${reportText}  •  E: Revive`;
+        else if (state.secret?.role === "Sorcerer" && !me.seanceUsed) text = `${reportText}  •  R: Commune`;
+        else text = reportText;
       } else if (task) {
         text = `F: Solve puzzle — ${task.name}`;
       } else if (sewer && SEWER_ROLES.has(state.secret?.role)) {
@@ -2868,6 +3295,7 @@ function exitToJoinScreen(previousRoomId) {
   state.players = {};
   state.bodies = {};
   state.meeting = null;
+  state.seance = null;
   state.secret = null;
   state.allSecrets = {};
   state.controlsVisible = false;
@@ -2884,6 +3312,7 @@ function exitToJoinScreen(previousRoomId) {
   setVisible("chatPanel", false);
   setVisible("chatToggle", false);
   setVisible("meetingOverlay", false);
+  setVisible("seanceOverlay", false);
   setVisible("sewerOverlay", false);
   setVisible("mapOverlay", false);
   setVisible("endOverlay", false);
@@ -3008,6 +3437,10 @@ function setupCustomizer() {
 
 function openCustomizer() {
   if (!state.joined) return;
+  if (currentPhase() === "game" && !getMyPlayer()?.alive) {
+    showToast("Fallen players cannot change appearance");
+    return;
+  }
   state.customDraft = normalizeCustomization(getMyPlayer() || {}, state.uid);
   refreshCustomizer();
   setVisible("customizeOverlay", true);
@@ -3407,6 +3840,7 @@ function drawPlayers(context, phase) {
       ? !player.isBot && player.connected
       : player.inMatch;
     if (!shouldDraw) continue;
+    if (phase !== "lobby" && !player.alive && id !== state.uid) continue;
     const isMe = id === state.uid;
     const render = state.renderPositions.get(id);
     const x = isMe ? state.localPos.x : (render?.x ?? player.x);
@@ -3420,6 +3854,15 @@ function drawPlayers(context, phase) {
     context.font = "700 13px system-ui";
     context.textAlign = "center";
     context.fillText(player.name || "Unknown", 0, -56);
+    const seanceActive = state.seance
+      && state.seance.sorcererId === id
+      && state.seance.phase !== "complete"
+      && now < Number(state.seance.expiresAt || Infinity);
+    if (seanceActive) {
+      context.fillStyle = "#f4f0df";
+      context.font = "900 24px system-ui";
+      context.fillText("☠", 0, -82);
+    }
     if (!player.alive) {
       context.fillStyle = "#d6d1c4";
       context.font = "12px system-ui";
@@ -3459,7 +3902,7 @@ function renderMapOverlay(now) {
     mapCtx.fillText(room.name, (room.x + room.w / 2) * sx, (room.y + 22) * sy);
   }
   for (const [id, player] of Object.entries(state.players)) {
-    if (!player.inMatch) continue;
+    if (!player.inMatch || !player.alive) continue;
     const shape = shapeDefinition(player.shape, id);
     const x = player.x * sx;
     const y = player.y * sy;
@@ -3700,6 +4143,7 @@ async function hostBotTick() {
   try {
     const phase = currentPhase();
     if (phase === "game") {
+      await processSeanceHost();
       await ensureTaskAssignments();
       await runBotsInGame();
       await checkWinConditions();
@@ -3760,7 +4204,7 @@ async function runBotsInGame() {
       target = nearbyBody;
     }
 
-    if (role === "Alchemist" && Number(bot.dartsRemaining || 0) > 0 && now >= (brain.nextDartAt || 0)) {
+    if (role === "Sorcerer" && Number(bot.dartsRemaining || 0) > 0 && now >= (brain.nextDartAt || 0)) {
       let dartTarget = null;
       if (nearbyBody && now - (nearbyBody.createdAt || 0) < 9000) {
         dartTarget = alivePlayers()
@@ -3773,7 +4217,7 @@ async function runBotsInGame() {
         if (closePlayers.length && Math.random() < 0.018) dartTarget = closePlayers[0];
       }
       if (dartTarget && distance(bot, dartTarget) <= 280) {
-        await shootAlchemistDart(bot.id, dartTarget.id);
+        await shootSorcererDart(bot.id, dartTarget.id);
         brain.nextDartAt = now + 4500;
       }
     }
