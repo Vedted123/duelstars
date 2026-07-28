@@ -225,6 +225,28 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .dpad button:nth-child(4) { grid-column: 3; grid-row: 2; }
 .action-pad { display: grid; grid-template-columns: repeat(2, 54px); gap: 8px; }
 
+
+.task-game-card { width: min(590px, 95vw); max-height: 90vh; overflow: auto; padding: 24px; text-align: center; }
+.task-game-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; text-align: left; }
+.task-game-heading h2 { margin: 4px 0; font-family: Georgia, serif; font-size: clamp(25px, 5vw, 38px); }
+.task-game-instruction { min-height: 44px; color: var(--muted); line-height: 1.45; }
+.task-game-area { min-height: 230px; display: grid; place-items: center; margin: 16px 0; padding: 18px; border-radius: 14px; background: rgba(0,0,0,.24); border: 1px solid rgba(255,255,255,.09); }
+.task-game-status { min-height: 24px; color: var(--gold-2); font-weight: 800; }
+.puzzle-button-grid { width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 10px; }
+.puzzle-button { min-height: 62px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); font-size: 24px; }
+.puzzle-button.correct { color: #152419; background: var(--success); }
+.puzzle-button.wrong { background: var(--danger); }
+.lock-pin { min-height: 150px; display: flex; align-items: end; justify-content: center; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); }
+.lock-pin-bar { width: 24px; border-radius: 8px 8px 3px 3px; background: linear-gradient(180deg, var(--gold-2), #806518); box-shadow: inset 0 -8px rgba(0,0,0,.18); }
+.shield-grid { width: min(360px, 82vw); display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.shield-tile { aspect-ratio: 1; padding: 0; display: grid; place-items: center; color: #251d08; background: linear-gradient(145deg, #f3d678, #a87d18); border: 2px solid #fff0a5; font-size: 22px; }
+.shield-tile.blank { opacity: .08; cursor: default; }
+.timing-wrap { width: 100%; display: grid; gap: 18px; }
+.timing-track { position: relative; width: 100%; height: 34px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.15); }
+.timing-zone { position: absolute; left: 43%; width: 14%; top: 0; bottom: 0; background: rgba(114,199,141,.5); }
+.timing-marker { position: absolute; top: 2px; bottom: 2px; width: 7px; border-radius: 6px; background: var(--gold-2); box-shadow: 0 0 12px rgba(255,242,168,.7); transform: translateX(-50%); }
+.timing-hit-button { width: 100%; min-height: 58px; color: #211b06; background: var(--gold); }
+
 @media (max-width: 760px) {
   .hud { grid-template-columns: 1fr auto; font-size: 12px; }
   .hud-cluster.center { display: none; }
@@ -384,6 +406,22 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
       </div>
     </section>
 
+
+    <section id="taskGameOverlay" class="screen-overlay hidden">
+      <div class="panel task-game-card">
+        <div class="task-game-heading">
+          <div>
+            <div class="eyebrow">ROYAL DUTY PUZZLE</div>
+            <h2 id="taskGameTitle">Royal Duty</h2>
+          </div>
+          <button id="closeTaskGameButton" class="icon-button" aria-label="Close task">×</button>
+        </div>
+        <p id="taskGameInstruction" class="task-game-instruction"></p>
+        <div id="taskGameArea" class="task-game-area"></div>
+        <div id="taskGameStatus" class="task-game-status"></div>
+      </div>
+    </section>
+
     <section id="mapOverlay" class="map-overlay hidden">
       <div class="map-card">
         <div class="map-title">Marauder's Map</div>
@@ -471,7 +509,7 @@ const mapCtx = mapCanvas.getContext("2d");
 
 const MAX_PLAYERS = 10;
 const PUBLIC_ROOM_ID = "TRAITOR";
-const TASK_GOAL = 75;
+const TASK_GOAL = 45;
 const INITIAL_TASK_BATCH = 5;
 const ABSTAIN_VOTE = "__abstain__";
 const SEWER_TRAVEL_RANGE = 950;
@@ -481,10 +519,10 @@ const WORLD_SIZE = { width: 1900 * MAP_SCALE, height: 1200 * MAP_SCALE };
 const LOBBY_PAD = { x: 480, y: 245, w: 240, h: 175 };
 const LEVER = { x: 950 * MAP_SCALE, y: 570 * MAP_SCALE, radius: 34 };
 const ROLE_DECK = [
-  "Peasant", "Peasant", "Peasant", "Peasant", "Peasant",
-  "Chameleon", "Mason", "King", "Advisor", "Chef",
+  "Peasant", "Peasant", "Peasant", "Peasant",
+  "Chameleon", "Mason", "King", "Advisor", "Chef", "Alchemist",
 ];
-const TASKER_ROLES = new Set(["Peasant", "Mason", "Advisor", "Chef"]);
+const TASKER_ROLES = new Set(["Peasant", "Mason", "Advisor", "Chef", "Alchemist"]);
 const SEWER_ROLES = new Set(["Mason", "Chameleon"]);
 const PLAYER_COLORS = [
   "#c95656", "#4c86c6", "#65a76b", "#bd73bd", "#d79b45",
@@ -551,7 +589,7 @@ const TASKS = [
   { id: "ring_bell", name: "Ring the chapel bell", icon: "🔔", room: "chapel", x: 1480, y: 555 },
   { id: "restore_glass", name: "Restore the stained glass", icon: "◇", room: "chapel", x: 1685, y: 655 },
   { id: "turn_winch", name: "Turn the dungeon winch", icon: "⚙", room: "dungeon", x: 215, y: 960 },
-  { id: "lock_cells", name: "Check the cell locks", icon: "🔒", room: "dungeon", x: 445, y: 1040 },
+  { id: "lock_cells", name: "Pick the dungeon lock", icon: "🔒", room: "dungeon", x: 445, y: 1040 },
   { id: "mix_tonic", name: "Mix a healing tonic", icon: "⚗", room: "alchemy", x: 845, y: 960 },
   { id: "sort_herbs", name: "Sort the alchemist's herbs", icon: "🌿", room: "alchemy", x: 1060, y: 1050 },
   { id: "draw_water", name: "Draw water from the well", icon: "🪣", room: "courtyard", x: 1480, y: 970 },
@@ -591,6 +629,27 @@ function makeTaskAssignment(baseId, serial) {
   return `${baseId}__${serial}`;
 }
 
+const TASK_GAME_TYPES = {
+  repair_shield: "shield",
+  lock_cells: "lockpick",
+  polish_crown: "memory",
+  light_braziers: "memory",
+  restore_glass: "memory",
+  mix_tonic: "memory",
+  decode_runes: "sequence",
+  align_banners: "sequence",
+  stack_scrolls: "sequence",
+  set_banquet: "sequence",
+  sort_herbs: "sequence",
+  trim_hedges: "sequence",
+  stoke_oven: "timing",
+  knead_bread: "timing",
+  sharpen_swords: "timing",
+  ring_bell: "timing",
+  turn_winch: "timing",
+  draw_water: "timing",
+};
+
 const ROLE_INFO = {
   Peasant: {
     description: "Complete royal duties and help the castle identify the Chameleon.",
@@ -609,6 +668,9 @@ const ROLE_INFO = {
   },
   Chef: {
     description: "Complete duties. Once per match, revive one person killed by the Chameleon.",
+  },
+  Alchemist: {
+    description: "Complete duties. Fire five alchemical darts per match; each dart stuns a nearby player for five seconds.",
   },
 };
 
@@ -630,6 +692,9 @@ const state = {
   lastPadValue: null,
   taskHold: { id: null, elapsed: 0 },
   taskPending: false,
+  taskGame: null,
+  taskGameTimer: null,
+  noticedStunUntil: 0,
   mapVisibleUntil: 0,
   chatOpen: false,
   chatUnsub: null,
@@ -752,8 +817,12 @@ function pointInRect(x, y, rect, padding = 0) {
 }
 
 function isWalkable(x, y) {
-  return ROOMS.some((room) => pointInRect(x, y, room, 18))
-    || CORRIDORS.some((corridor) => pointInRect(x, y, corridor, 4));
+  // Expand connected floor rectangles slightly so the decorative wall strokes and
+  // tiny authored gaps at doorways never block a player or a bot.
+  const doorwayAllowance = 22;
+  if (x < 18 || y < 18 || x > WORLD_SIZE.width - 18 || y > WORLD_SIZE.height - 18) return false;
+  return ROOMS.some((room) => pointInRect(x, y, room, -doorwayAllowance))
+    || CORRIDORS.some((corridor) => pointInRect(x, y, corridor, -doorwayAllowance));
 }
 
 function getMyPlayer() {
@@ -794,6 +863,61 @@ function showToast(message, ms = 2200) {
 
 function setVisible(id, visible) {
   $(id).classList.toggle("hidden", !visible);
+}
+
+function canAccessChat() {
+  const phase = currentPhase();
+  if (phase === "lobby") return Boolean(state.joined);
+  const me = getMyPlayer();
+  return Boolean(state.joined && me?.inMatch && me.alive && phase !== "ended");
+}
+
+function clearTaskGameTimer() {
+  if (state.taskGameTimer) {
+    clearTimeout(state.taskGameTimer);
+    clearInterval(state.taskGameTimer);
+    state.taskGameTimer = null;
+  }
+}
+
+function closeTaskGame(showMessage = false) {
+  if (showMessage && state.taskGame) showToast("Duty puzzle closed");
+  clearTaskGameTimer();
+  state.taskGame = null;
+  setVisible("taskGameOverlay", false);
+  $("taskGameArea").replaceChildren();
+  $("taskGameStatus").textContent = "";
+}
+
+function syncRestrictedUi(previousOwn = null, own = getMyPlayer()) {
+  const phase = currentPhase();
+  const canChat = canAccessChat();
+  if (!canChat) {
+    state.chatOpen = false;
+    setVisible("chatPanel", false);
+  }
+  setVisible("chatToggle", canChat && !state.chatOpen);
+
+  const canSeeCouncil = phase === "meeting" && Boolean(own?.alive);
+  setVisible("meetingOverlay", canSeeCouncil);
+
+  if ((phase === "game" || phase === "meeting") && own && !own.alive) {
+    state.tasksVisible = false;
+    state.decreeMode = false;
+    setVisible("taskPanel", false);
+    closeTaskGame(false);
+  }
+
+  const stunUntil = Number(own?.stunnedUntil || 0);
+  if (stunUntil > Date.now() && stunUntil !== state.noticedStunUntil) {
+    state.noticedStunUntil = stunUntil;
+    closeTaskGame(false);
+    showToast("You were stunned by an alchemist dart for 5 seconds", 3000);
+  }
+
+  if (previousOwn?.alive && own && !own.alive) {
+    showToast("You have fallen. Chat, voting, and duties are disabled.", 3600);
+  }
 }
 
 function resizeCanvas() {
@@ -964,6 +1088,7 @@ function beginRoomListeners() {
         state.localPos = { x: own.x || 600, y: own.y || 560 };
       }
     }
+    syncRestrictedUi(previousOwn, own);
     renderLobbyPanel();
     renderMeetingPlayers();
     maybeClaimHost();
@@ -977,7 +1102,8 @@ function beginRoomListeners() {
   state.listeners.push(onValue(ref(db, roomPath("meeting")), (snapshot) => {
     state.meeting = snapshot.val() || null;
     renderMeetingPlayers();
-    if (state.meeting && currentPhase() === "meeting") openChat(true);
+    if (state.meeting && currentPhase() === "meeting" && getMyPlayer()?.alive) openChat(true);
+    else syncRestrictedUi();
     maybeHostActions();
   }));
 
@@ -1008,6 +1134,7 @@ function handleMetaChange() {
     if (phase === "lobby" || phase === "ended") {
       state.controlsVisible = false;
       state.tasksVisible = false;
+      closeTaskGame(false);
     }
     state.lastPhase = phase;
   }
@@ -1016,11 +1143,13 @@ function handleMetaChange() {
   $("connectionLabel").textContent = "Online";
   $("hostLabel").textContent = isHost() ? "You are host" : "Networked";
   setVisible("lobbyPanel", phase === "lobby");
-  setVisible("meetingOverlay", phase === "meeting");
   setVisible("endOverlay", phase === "ended");
 
   if (phase !== "meeting") state.decreeMode = false;
-  if (phase === "meeting") setVisible("customizeOverlay", false);
+  if (phase === "meeting") {
+    setVisible("customizeOverlay", false);
+    closeTaskGame(false);
+  }
 
   if (phase === "lobby") {
     state.secret = null;
@@ -1041,6 +1170,7 @@ function handleMetaChange() {
   }
 
   attachChatListener();
+  syncRestrictedUi();
   renderRolePanel();
   renderTaskPanel();
   renderLobbyPanel();
@@ -1106,6 +1236,8 @@ function attachChatListener() {
 async function sendMessage(text, options = {}) {
   const clean = String(text || "").trim().slice(0, 140);
   if (!clean || !state.roomId) return;
+  const privileged = Boolean(options.system || options.bot || options.uid === "system");
+  if (!privileged && !canAccessChat()) return;
   const sender = options.sender || getMyPlayer()?.name || "Castle";
   await push(ref(db, chatPath(options.channel || "auto", options.matchId)), {
     uid: options.uid || state.uid || "system",
@@ -1138,6 +1270,12 @@ function renderMessages(messages) {
 }
 
 function openChat(forceOpen = false) {
+  if (!canAccessChat()) {
+    state.chatOpen = false;
+    setVisible("chatPanel", false);
+    setVisible("chatToggle", false);
+    return;
+  }
   state.chatOpen = forceOpen || !state.chatOpen;
   setVisible("chatPanel", state.chatOpen);
   setVisible("chatToggle", !state.chatOpen && state.joined);
@@ -1148,6 +1286,7 @@ $("chatToggle").addEventListener("click", () => openChat());
 $("closeChatButton").addEventListener("click", () => openChat());
 $("chatForm").addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!canAccessChat()) return;
   const now = Date.now();
   if (now - state.lastChatAt < 900) return;
   const input = $("chatInput");
@@ -1286,6 +1425,8 @@ async function startGame(realParticipants) {
         mapReadyAt: Date.now() + 4000,
         invisibleUntil: 0,
         reviveUsed: false,
+        dartsRemaining: role === "Alchemist" ? 5 : 0,
+        stunnedUntil: 0,
         lastSeen: Date.now(),
       };
       updates[secretPath(id)] = { role, tasks: assignedTasks };
@@ -1364,32 +1505,43 @@ function renderRolePanel() {
   };
 
   const now = Date.now();
+  const stunned = (me.stunnedUntil || 0) > now;
+  if (stunned) {
+    addButton("!", "Stunned", `${Math.ceil((me.stunnedUntil - now) / 1000)}s`, () => {}, { disabled: true, danger: true });
+  }
+
   if (role === "Chameleon") {
     const killRemaining = Math.max(0, (me.killReadyAt || 0) - now);
     const invisRemaining = Math.max(0, (me.invisReadyAt || 0) - now);
     addButton("E", "Kill nearest", killRemaining ? `${Math.ceil(killRemaining / 1000)}s` : "Ready", useAbilityOne, {
       ready: !killRemaining,
       danger: true,
-      disabled: !me.alive || currentPhase() !== "game" || Boolean(killRemaining),
+      disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(killRemaining),
     });
     addButton("R", "Become invisible", invisRemaining ? `${Math.ceil(invisRemaining / 1000)}s` : "Ready", useAbilityTwo, {
       ready: !invisRemaining,
-      disabled: !me.alive || currentPhase() !== "game" || Boolean(invisRemaining),
+      disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(invisRemaining),
     });
   } else if (role === "Advisor") {
     const remaining = Math.max(0, (me.mapReadyAt || 0) - now);
     addButton("E", "Marauder's Map", remaining ? `${Math.ceil(remaining / 1000)}s` : "Ready", useAbilityOne, {
       ready: !remaining,
-      disabled: !me.alive || currentPhase() !== "game" || Boolean(remaining),
+      disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(remaining),
     });
   } else if (role === "Chef") {
     addButton("E", "Revive nearby body", me.reviveUsed ? "Used" : "Ready", useAbilityOne, {
       ready: !me.reviveUsed,
-      disabled: !me.alive || me.reviveUsed || currentPhase() !== "game",
+      disabled: !me.alive || stunned || me.reviveUsed || currentPhase() !== "game",
     });
   } else if (role === "Mason") {
     addButton("E", "Use nearby sewer", "Near grate", useAbilityOne, {
-      disabled: !me.alive || currentPhase() !== "game",
+      disabled: !me.alive || stunned || currentPhase() !== "game",
+    });
+  } else if (role === "Alchemist") {
+    const darts = Number(me.dartsRemaining ?? 5);
+    addButton("E", "Fire stun dart", `${darts} dart${darts === 1 ? "" : "s"} left`, useAbilityOne, {
+      ready: darts > 0,
+      disabled: !me.alive || stunned || currentPhase() !== "game" || darts <= 0,
     });
   } else if (role === "King") {
     addButton("E", "Royal Decree", currentPhase() === "meeting" ? "Choose target" : "Council only", useAbilityOne, {
@@ -1398,25 +1550,28 @@ function renderRolePanel() {
     });
   }
 
-  addButton("F", "Interact / perform duty", TASKER_ROLES.has(role) ? "Hold near task" : "Castle objects", handleInteraction, {
-    disabled: currentPhase() !== "game" || (!me.alive && !TASKER_ROLES.has(role)),
+  addButton("F", "Interact / solve duty", TASKER_ROLES.has(role) ? "Press near task" : "Castle objects", handleInteraction, {
+    disabled: currentPhase() !== "game" || !me.alive || stunned,
   });
   addButton("Q", "Leave match", state.secret?.role === "Chameleon" ? "Loyal court wins" : "Exit immediately", leaveCurrentGame, {
     danger: true,
     disabled: !["game", "meeting", "starting", "ended"].includes(currentPhase()),
   });
   addButton("T", state.tasksVisible ? "Hide duties" : "Show duties", "Toggle task list", toggleTasksPanel, {
-    disabled: currentPhase() !== "game" || !(state.secret?.tasks || []).length,
+    disabled: currentPhase() !== "game" || !me.alive || !(state.secret?.tasks || []).length,
   });
   addButton("P", "Hide controls", "Toggle this panel", toggleControlsPanel);
 }
 
 function useAbilityOne() {
   const role = state.secret?.role;
+  const me = getMyPlayer();
+  if (!me?.alive || (me.stunnedUntil || 0) > Date.now()) return;
   if (role === "Chameleon") performKill(state.uid);
   else if (role === "Advisor") useAdvisorMap();
   else if (role === "Chef") useChefRevive();
   else if (role === "Mason") tryOpenNearbySewer();
+  else if (role === "Alchemist") shootAlchemistDart(state.uid);
   else if (role === "King" && currentPhase() === "meeting" && !state.meeting?.decreeBy) {
     state.decreeMode = true;
     showToast("Royal Decree ready — choose a player to silence");
@@ -1425,6 +1580,8 @@ function useAbilityOne() {
 }
 
 function useAbilityTwo() {
+  const me = getMyPlayer();
+  if (!me?.alive || (me.stunnedUntil || 0) > Date.now()) return;
   if (state.secret?.role === "Chameleon") useInvisibility();
 }
 
@@ -1435,7 +1592,8 @@ function toggleControlsPanel() {
 }
 
 function toggleTasksPanel() {
-  if (currentPhase() !== "game" || !(state.secret?.tasks || []).length) return;
+  const me = getMyPlayer();
+  if (currentPhase() !== "game" || !me?.alive || !(state.secret?.tasks || []).length) return;
   state.tasksVisible = !state.tasksVisible;
   renderTaskPanel();
   renderRolePanel();
@@ -1444,7 +1602,7 @@ function toggleTasksPanel() {
 function renderTaskPanel() {
   const assignments = state.secret?.tasks || [];
   const me = getMyPlayer();
-  if (!assignments.length || !me || currentPhase() !== "game" || !state.tasksVisible) {
+  if (!assignments.length || !me?.alive || currentPhase() !== "game" || !state.tasksVisible) {
     setVisible("taskPanel", false);
     return;
   }
@@ -1498,7 +1656,7 @@ function formatDuration(ms) {
 
 function nearestTask() {
   const me = getMyPlayer();
-  if (!me || !TASKER_ROLES.has(state.secret?.role) || !state.secret?.tasks?.length) return null;
+  if (!me?.alive || !TASKER_ROLES.has(state.secret?.role) || !state.secret?.tasks?.length) return null;
   let nearest = null;
   let nearestDistance = Infinity;
   for (const assignmentId of state.secret.tasks) {
@@ -1515,7 +1673,8 @@ function nearestTask() {
 }
 
 async function completeTask(taskId, playerId = state.uid) {
-  if (!taskId || state.taskPending || currentPhase() !== "game") return;
+  const player = state.players[playerId];
+  if (!taskId || state.taskPending || currentPhase() !== "game" || !player?.alive) return;
   if (playerId === state.uid) state.taskPending = true;
   try {
     await set(ref(db, roomPath(`players/${playerId}/completedTasks/${taskId}`)), true);
@@ -1528,19 +1687,262 @@ async function completeTask(taskId, playerId = state.uid) {
   }
 }
 
+const PUZZLE_SYMBOLS = ["☀", "☾", "✦", "◆", "♜", "⚗", "⚔", "♛"];
+
+function setTaskGameStatus(message) {
+  $("taskGameStatus").textContent = message;
+}
+
+function makePuzzleButton(label, onClick, className = "puzzle-button") {
+  const button = document.createElement("button");
+  button.className = className;
+  button.textContent = label;
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+async function finishTaskPuzzle() {
+  const game = state.taskGame;
+  const assignmentId = game?.assignmentId;
+  if (!assignmentId || game.finishing) return;
+  game.finishing = true;
+  clearTaskGameTimer();
+  setTaskGameStatus("Duty complete!");
+  await completeTask(assignmentId);
+  closeTaskGame(false);
+}
+
+function startTaskGame(task) {
+  const me = getMyPlayer();
+  if (!task || currentPhase() !== "game" || !me?.alive || (me.stunnedUntil || 0) > Date.now()) return;
+  if (me.completedTasks?.[task.assignmentId] || state.taskPending) return;
+  closeTaskGame(false);
+  state.keys.f = false;
+  state.taskGame = {
+    assignmentId: task.assignmentId,
+    task,
+    type: TASK_GAME_TYPES[task.id] || "sequence",
+  };
+  $("taskGameTitle").textContent = task.name;
+  $("taskGameStatus").textContent = "";
+  setVisible("taskGameOverlay", true);
+  renderCurrentTaskGame();
+}
+
+function renderCurrentTaskGame() {
+  const game = state.taskGame;
+  if (!game) return;
+  clearTaskGameTimer();
+  if (game.type === "shield") renderShieldPuzzle();
+  else if (game.type === "lockpick") renderLockpickPuzzle();
+  else if (game.type === "memory") renderMemoryPuzzle();
+  else if (game.type === "timing") renderTimingPuzzle();
+  else renderSequencePuzzle();
+}
+
+function renderSequencePuzzle() {
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  game.solution = shuffle(PUZZLE_SYMBOLS).slice(0, 4);
+  game.progress = 0;
+  $("taskGameInstruction").textContent = `Press the runes in this order: ${game.solution.join(" → ")}`;
+  const grid = document.createElement("div");
+  grid.className = "puzzle-button-grid";
+  for (const symbol of shuffle(PUZZLE_SYMBOLS)) {
+    const button = makePuzzleButton(symbol, () => {
+      if (!state.taskGame) return;
+      if (symbol === game.solution[game.progress]) {
+        button.classList.add("correct");
+        button.disabled = true;
+        game.progress += 1;
+        setTaskGameStatus(`${game.progress} / ${game.solution.length} runes aligned`);
+        if (game.progress >= game.solution.length) finishTaskPuzzle();
+      } else {
+        setTaskGameStatus("Wrong rune — the sequence reset");
+        for (const child of grid.children) {
+          child.disabled = false;
+          child.classList.remove("correct");
+        }
+        game.progress = 0;
+      }
+    });
+    grid.appendChild(button);
+  }
+  area.appendChild(grid);
+}
+
+function renderLockpickPuzzle() {
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  game.progress = 1;
+  $("taskGameInstruction").textContent = "Pick the lock by pressing the tumblers from shortest to tallest.";
+  const grid = document.createElement("div");
+  grid.className = "puzzle-button-grid";
+  for (const value of shuffle([1, 2, 3, 4, 5])) {
+    const button = document.createElement("button");
+    button.className = "lock-pin";
+    const bar = document.createElement("span");
+    bar.className = "lock-pin-bar";
+    bar.style.height = `${28 + value * 18}px`;
+    button.appendChild(bar);
+    button.addEventListener("click", () => {
+      if (value === game.progress) {
+        button.disabled = true;
+        button.classList.add("correct");
+        game.progress += 1;
+        setTaskGameStatus(`${game.progress - 1} / 5 tumblers set`);
+        if (game.progress === 6) finishTaskPuzzle();
+      } else {
+        setTaskGameStatus("The lock slipped — start with the shortest pin again");
+        game.progress = 1;
+        for (const child of grid.children) {
+          child.disabled = false;
+          child.classList.remove("correct");
+        }
+      }
+    });
+    grid.appendChild(button);
+  }
+  area.appendChild(grid);
+}
+
+function shuffledShieldTiles() {
+  const tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+  let blank = 8;
+  for (let step = 0; step < 80; step += 1) {
+    const row = Math.floor(blank / 3);
+    const col = blank % 3;
+    const choices = [];
+    if (row > 0) choices.push(blank - 3);
+    if (row < 2) choices.push(blank + 3);
+    if (col > 0) choices.push(blank - 1);
+    if (col < 2) choices.push(blank + 1);
+    const next = choices[Math.floor(Math.random() * choices.length)];
+    [tiles[blank], tiles[next]] = [tiles[next], tiles[blank]];
+    blank = next;
+  }
+  if (tiles.every((tile, index) => tile === (index + 1) % 9)) {
+    [tiles[7], tiles[8]] = [tiles[8], tiles[7]];
+  }
+  return tiles;
+}
+
+function renderShieldPuzzle() {
+  const game = state.taskGame;
+  if (!game.tiles) game.tiles = shuffledShieldTiles();
+  $("taskGameInstruction").textContent = "Repair the cracked shield: slide the fragments into 1–8 order.";
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  const grid = document.createElement("div");
+  grid.className = "shield-grid";
+  game.tiles.forEach((value, index) => {
+    const button = makePuzzleButton(value ? `🛡 ${value}` : "", () => {
+      if (!value) return;
+      const blank = game.tiles.indexOf(0);
+      const row = Math.floor(index / 3);
+      const col = index % 3;
+      const blankRow = Math.floor(blank / 3);
+      const blankCol = blank % 3;
+      if (Math.abs(row - blankRow) + Math.abs(col - blankCol) !== 1) {
+        setTaskGameStatus("That fragment cannot slide into the empty space");
+        return;
+      }
+      [game.tiles[index], game.tiles[blank]] = [game.tiles[blank], game.tiles[index]];
+      const solved = game.tiles.every((tile, tileIndex) => tile === (tileIndex + 1) % 9);
+      if (solved) finishTaskPuzzle();
+      else renderShieldPuzzle();
+    }, `shield-tile${value ? "" : " blank"}`);
+    if (!value) button.disabled = true;
+    grid.appendChild(button);
+  });
+  area.appendChild(grid);
+}
+
+function renderMemoryPuzzle() {
+  clearTaskGameTimer();
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  game.solution = shuffle(PUZZLE_SYMBOLS.slice(0, 6)).slice(0, 4);
+  game.progress = 0;
+  game.previewing = true;
+  $("taskGameInstruction").textContent = `Memorize: ${game.solution.join("  ")}`;
+  setTaskGameStatus("The runes will hide in two seconds");
+  const grid = document.createElement("div");
+  grid.className = "puzzle-button-grid";
+  for (const symbol of shuffle(PUZZLE_SYMBOLS.slice(0, 6))) {
+    const button = makePuzzleButton(symbol, () => {
+      if (game.previewing) return;
+      if (symbol === game.solution[game.progress]) {
+        game.progress += 1;
+        button.classList.add("correct");
+        setTimeout(() => button.classList.remove("correct"), 180);
+        setTaskGameStatus(`${game.progress} / ${game.solution.length} remembered`);
+        if (game.progress >= game.solution.length) finishTaskPuzzle();
+      } else {
+        setTaskGameStatus("Memory broken — watch the sequence again");
+        renderMemoryPuzzle();
+      }
+    });
+    button.disabled = true;
+    grid.appendChild(button);
+  }
+  area.appendChild(grid);
+  state.taskGameTimer = setTimeout(() => {
+    if (state.taskGame !== game) return;
+    game.previewing = false;
+    $("taskGameInstruction").textContent = "Repeat the hidden rune sequence.";
+    setTaskGameStatus("");
+    for (const button of grid.children) button.disabled = false;
+  }, 2000);
+}
+
+function renderTimingPuzzle() {
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  game.position = 3;
+  game.direction = 1;
+  game.hits = 0;
+  $("taskGameInstruction").textContent = "Stop the marker inside the green zone three times.";
+  const wrap = document.createElement("div");
+  wrap.className = "timing-wrap";
+  const track = document.createElement("div");
+  track.className = "timing-track";
+  const zone = document.createElement("div");
+  zone.className = "timing-zone";
+  const marker = document.createElement("div");
+  marker.className = "timing-marker";
+  marker.style.left = `${game.position}%`;
+  track.append(zone, marker);
+  const strike = makePuzzleButton("Strike now", () => {
+    if (game.position >= 43 && game.position <= 57) {
+      game.hits += 1;
+      setTaskGameStatus(`${game.hits} / 3 perfect strikes`);
+      if (game.hits >= 3) finishTaskPuzzle();
+    } else {
+      game.hits = 0;
+      setTaskGameStatus("Missed the green zone — the count reset");
+    }
+  }, "timing-hit-button");
+  wrap.append(track, strike);
+  area.appendChild(wrap);
+  state.taskGameTimer = setInterval(() => {
+    if (state.taskGame !== game) return;
+    game.position += game.direction * 2.2;
+    if (game.position >= 98) { game.position = 98; game.direction = -1; }
+    if (game.position <= 2) { game.position = 2; game.direction = 1; }
+    marker.style.left = `${game.position}%`;
+  }, 28);
+}
+
+$("closeTaskGameButton").addEventListener("click", () => closeTaskGame(true));
+
 function updateTaskHold(deltaMs) {
-  if (!state.keys.f || currentPhase() !== "game" || !TASKER_ROLES.has(state.secret?.role)) {
-    state.taskHold = { id: null, elapsed: 0 };
-    return;
-  }
-  const task = nearestTask();
-  if (!task) {
-    state.taskHold = { id: null, elapsed: 0 };
-    return;
-  }
-  if (state.taskHold.id !== task.assignmentId) state.taskHold = { id: task.assignmentId, elapsed: 0 };
-  state.taskHold.elapsed += deltaMs;
-  if (state.taskHold.elapsed >= 1250) completeTask(task.assignmentId);
+  // Duties now use interactive puzzles instead of hold-to-complete progress.
+  state.taskHold = { id: null, elapsed: 0 };
 }
 
 async function ensureTaskAssignments() {
@@ -1552,7 +1954,7 @@ async function ensureTaskAssignments() {
   for (const player of activePlayers()) {
     if (issued >= TASK_GOAL) break;
     const secret = state.allSecrets[player.id];
-    if (!secret || !TASKER_ROLES.has(secret.role)) continue;
+    if (!player.alive || !secret || !TASKER_ROLES.has(secret.role)) continue;
     const assignments = secret.tasks || [];
     const pending = assignments.filter((assignmentId) => !player.completedTasks?.[assignmentId]);
     if (pending.length) continue;
@@ -1647,23 +2049,60 @@ function tryOpenNearbySewer() {
 
 $("closeSewerButton").addEventListener("click", () => setVisible("sewerOverlay", false));
 
-function nearestLivingTarget(killerId) {
-  const killer = state.players[killerId];
-  if (!killer?.alive) return null;
+function nearestLivingTarget(actorId, maxDistance = 58, preferredTargetId = "") {
+  const actor = state.players[actorId];
+  if (!actor?.alive) return null;
+  const preferred = preferredTargetId ? state.players[preferredTargetId] : null;
+  if (preferred?.inMatch && preferred.alive && preferredTargetId !== actorId && distance(actor, preferred) <= maxDistance) {
+    return { id: preferredTargetId, ...preferred };
+  }
   let result = null;
   let best = Infinity;
   for (const [id, player] of Object.entries(state.players)) {
-    if (id === killerId || !player.inMatch || !player.alive) continue;
-    const d = distance(killer, player);
+    if (id === actorId || !player.inMatch || !player.alive) continue;
+    const d = distance(actor, player);
     if (d < best) {
       best = d;
       result = { id, ...player };
     }
   }
-  return best <= 58 ? result : null;
+  return best <= maxDistance ? result : null;
 }
 
-async function performKill(killerId = state.uid) {
+async function shootAlchemistDart(shooterId = state.uid, preferredTargetId = "") {
+  if (currentPhase() !== "game") return false;
+  const shooter = state.players[shooterId];
+  const role = shooterId === state.uid ? state.secret?.role : state.allSecrets[shooterId]?.role;
+  const now = Date.now();
+  if (role !== "Alchemist" || !shooter?.alive || (shooter.stunnedUntil || 0) > now) return false;
+  const displayedDarts = Number(shooter.dartsRemaining ?? 5);
+  if (displayedDarts <= 0) {
+    if (shooterId === state.uid) showToast("You have used all five darts");
+    return false;
+  }
+  const target = nearestLivingTarget(shooterId, 280, preferredTargetId);
+  if (!target) {
+    if (shooterId === state.uid) showToast("No player is within dart range");
+    return false;
+  }
+
+  const dartTransaction = await runTransaction(ref(db, roomPath(`players/${shooterId}/dartsRemaining`)), (current) => {
+    const remaining = Number(current ?? 5);
+    if (remaining <= 0) return;
+    return remaining - 1;
+  });
+  if (!dartTransaction.committed) {
+    if (shooterId === state.uid) showToast("You have used all five darts");
+    return false;
+  }
+
+  const remainingAfter = Number(dartTransaction.snapshot.val() ?? 0);
+  await set(ref(db, roomPath(`players/${target.id}/stunnedUntil`)), now + 5000);
+  if (shooterId === state.uid) showToast(`${target.name} is stunned for 5 seconds · ${remainingAfter} darts left`);
+  return true;
+}
+
+async function performKill(killerId = state.uid, preferredTargetId = "") {
   if (currentPhase() !== "game") return;
   const killer = state.players[killerId];
   const role = killerId === state.uid ? state.secret?.role : state.allSecrets[killerId]?.role;
@@ -1673,7 +2112,7 @@ async function performKill(killerId = state.uid) {
     if (killerId === state.uid) showToast(`Kill ready in ${Math.ceil((killer.killReadyAt - now) / 1000)}s`);
     return;
   }
-  const victim = nearestLivingTarget(killerId);
+  const victim = nearestLivingTarget(killerId, 58, preferredTargetId);
   if (!victim) {
     if (killerId === state.uid) showToast("No player is close enough");
     return;
@@ -1840,6 +2279,12 @@ function appendVoteSummary(card, targetId) {
 
 function renderMeetingPlayers() {
   if (currentPhase() !== "meeting" || !state.meeting) return;
+  const me = getMyPlayer();
+  if (!me?.alive) {
+    setVisible("meetingOverlay", false);
+    return;
+  }
+  setVisible("meetingOverlay", true);
   $("meetingReason").textContent = state.meeting.reason || "The council has been called.";
   const phase = state.meeting.phase || "voting";
   $("meetingInstruction").textContent = phase === "result"
@@ -1850,7 +2295,6 @@ function renderMeetingPlayers() {
 
   const container = $("meetingPlayers");
   container.replaceChildren();
-  const me = getMyPlayer();
   const myVote = state.meeting.votes?.[state.uid] || "";
   const canVote = phase === "voting" && me?.alive && state.meeting.mutedPlayerId !== state.uid;
   const canDecree = phase === "voting" && state.secret?.role === "King" && me?.alive && !state.meeting.decreeBy && state.decreeMode;
@@ -2104,9 +2548,10 @@ async function resetToLobby() {
 function updateMovement(deltaSeconds) {
   if (!state.joined || !getMyPlayer()) return;
   const phase = currentPhase();
-  if (phase === "meeting" || phase === "ended" || phase === "starting") return;
+  if (phase === "meeting" || phase === "ended" || phase === "starting" || state.taskGame) return;
   const me = getMyPlayer();
   if (phase === "game" && (!me.inMatch || me.spectator)) return;
+  if (phase === "game" && (me.stunnedUntil || 0) > Date.now()) return;
 
   let dx = 0;
   let dy = 0;
@@ -2121,21 +2566,32 @@ function updateMovement(deltaSeconds) {
   const speed = phase === "lobby" ? 220 : me.alive ? 205 : 245;
   const stepX = dx * speed * deltaSeconds;
   const stepY = dy * speed * deltaSeconds;
-  let nextX = state.localPos.x + stepX;
-  let nextY = state.localPos.y + stepY;
 
   if (phase === "lobby") {
-    nextX = clamp(nextX, 55, LOBBY_SIZE.width - 55);
-    nextY = clamp(nextY, 90, LOBBY_SIZE.height - 45);
+    state.localPos = {
+      x: clamp(state.localPos.x + stepX, 55, LOBBY_SIZE.width - 55),
+      y: clamp(state.localPos.y + stepY, 90, LOBBY_SIZE.height - 45),
+    };
   } else if (!me.alive) {
-    nextX = clamp(nextX, 35, WORLD_SIZE.width - 35);
-    nextY = clamp(nextY, 35, WORLD_SIZE.height - 35);
+    state.localPos = {
+      x: clamp(state.localPos.x + stepX, 35, WORLD_SIZE.width - 35),
+      y: clamp(state.localPos.y + stepY, 35, WORLD_SIZE.height - 35),
+    };
   } else {
-    if (!isWalkable(nextX, state.localPos.y)) nextX = state.localPos.x;
-    if (!isWalkable(nextX, nextY)) nextY = state.localPos.y;
+    // Sub-step collision prevents snagging on door corners and avoids crossing walls
+    // during a slow frame.
+    const segments = Math.max(1, Math.ceil(Math.max(Math.abs(stepX), Math.abs(stepY)) / 6));
+    const sx = stepX / segments;
+    const sy = stepY / segments;
+    let x = state.localPos.x;
+    let y = state.localPos.y;
+    for (let index = 0; index < segments; index += 1) {
+      if (isWalkable(x + sx, y)) x += sx;
+      if (isWalkable(x, y + sy)) y += sy;
+    }
+    state.localPos = { x, y };
   }
 
-  state.localPos = { x: nextX, y: nextY };
   syncMovement();
   if (phase === "lobby") syncPadStatus();
 }
@@ -2163,10 +2619,16 @@ function syncPadStatus() {
 }
 
 function handleInteraction() {
-  if (currentPhase() !== "game" || !getMyPlayer()?.alive) return;
+  const me = getMyPlayer();
+  if (currentPhase() !== "game" || !me?.alive || (me.stunnedUntil || 0) > Date.now() || state.taskGame) return;
   const body = nearestBody(state.localPos, 72, false);
   if (body) {
     reportNearbyBody();
+    return;
+  }
+  const task = nearestTask();
+  if (task) {
+    startTaskGame(task);
     return;
   }
   const sewer = nearestSewer();
@@ -2175,7 +2637,7 @@ function handleInteraction() {
     return;
   }
   if (distance(state.localPos, LEVER) <= 65) {
-    initiateMeeting(`${getMyPlayer()?.name || "A player"} pulled the emergency council lever.`, null, state.uid);
+    initiateMeeting(`${me.name || "A player"} pulled the emergency council lever.`, null, state.uid);
   }
 }
 
@@ -2187,30 +2649,29 @@ function updateInteractionPrompt() {
     text = me?.onPad ? "You are on the yellow pad. Use the vote panel to start." : "Move onto the yellow pad to join the start vote.";
   } else if (currentPhase() === "game") {
     const me = getMyPlayer();
-    const task = nearestTask();
-    if (task) {
-      const progress = Math.min(100, (state.taskHold.elapsed / 1250) * 100);
-      text = `Hold F: ${task.name} (${Math.round(progress)}%)`;
-    } else if (me?.alive) {
-      const sewer = nearestSewer();
+    if (!me?.alive) {
+      text = "You are fallen. You may explore, but chat, council voting, and royal duties are disabled.";
+    } else if ((me.stunnedUntil || 0) > Date.now()) {
+      text = `Stunned for ${Math.max(1, Math.ceil((me.stunnedUntil - Date.now()) / 1000))} more second(s).`;
+    } else {
       const body = nearestBody(state.localPos, 72, false);
+      const task = nearestTask();
+      const sewer = nearestSewer();
       if (body) {
         text = state.secret?.role === "Chef" && !me.reviveUsed
           ? `F: Report ${body.victimName}  •  E: Revive`
           : `F: Report ${body.victimName}`;
+      } else if (task) {
+        text = `F: Solve puzzle — ${task.name}`;
       } else if (sewer && SEWER_ROLES.has(state.secret?.role)) {
         text = "F: Enter the castle sewers";
       } else if (distance(state.localPos, LEVER) <= 68) {
         text = "F: Pull the emergency council lever";
       }
-    } else if (TASKER_ROLES.has(state.secret?.role)) {
-      text = "You are a ghost. Continue your royal duties to help reach 75.";
-    } else {
-      text = "You are a ghost. You may explore and use chat.";
     }
   }
   prompt.textContent = text;
-  prompt.classList.toggle("hidden", !text);
+  prompt.classList.toggle("hidden", !text || Boolean(state.taskGame));
 }
 
 async function leaveCurrentGame() {
@@ -2267,6 +2728,7 @@ function exitToJoinScreen(previousRoomId) {
   state.chatOpen = false;
   state.lastPhase = "join";
   state.keys = {};
+  closeTaskGame(false);
   setVisible("topHud", false);
   setVisible("rolePanel", false);
   setVisible("lobbyPanel", false);
@@ -2289,6 +2751,10 @@ window.addEventListener("keydown", (event) => {
   const key = event.key.toLowerCase();
   if (event.target instanceof HTMLInputElement) {
     if (event.key === "Escape" && state.chatOpen) openChat();
+    return;
+  }
+  if (state.taskGame) {
+    if (key === "escape") closeTaskGame(true);
     return;
   }
   if (key === "/") {
@@ -2347,8 +2813,7 @@ document.querySelectorAll("[data-key]").forEach((button) => {
 });
 $("mobileAbilityOne").addEventListener("click", useAbilityOne);
 $("mobileAbilityTwo").addEventListener("click", useAbilityTwo);
-$("mobileInteract").addEventListener("pointerdown", () => { state.keys.f = true; handleInteraction(); });
-$("mobileInteract").addEventListener("pointerup", () => { state.keys.f = false; state.taskHold = { id: null, elapsed: 0 }; });
+$("mobileInteract").addEventListener("click", handleInteraction);
 $("mobileReport").addEventListener("click", leaveCurrentGame);
 
 function setupCustomizer() {
@@ -2804,6 +3269,10 @@ function drawPlayers(context, phase) {
       context.fillStyle = "#d6d1c4";
       context.font = "12px system-ui";
       context.fillText("ghost", 0, 49);
+    } else if ((player.stunnedUntil || 0) > now) {
+      context.fillStyle = "#bff4ff";
+      context.font = "900 12px system-ui";
+      context.fillText("✦ STUNNED ✦", 0, 51);
     }
     context.restore();
   }
@@ -2905,9 +3374,13 @@ function brainFor(id) {
       taskSince: 0,
       voteAt: 0,
       meetingSpoken: "",
-      nextAmbientAt: Date.now() + 45000 + Math.random() * 45000,
+      nextAmbientAt: Date.now() + 30000 + Math.random() * 40000,
       nextWanderAt: 0,
+      nextDartAt: 0,
       wanderTarget: null,
+      lastMoveAt: 0,
+      lastProgressAt: Date.now(),
+      lastPosition: null,
     });
   }
   return state.botBrains.get(id);
@@ -2939,21 +3412,22 @@ function nearestWalkableCell(point, grid = 50) {
   return best;
 }
 
-function findPath(start, target, grid = 50) {
+function findPath(start, target, grid = 42) {
   const startCell = nearestWalkableCell(start, grid);
   const endCell = nearestWalkableCell(target, grid);
   if (!startCell || !endCell) return [target];
   const cols = Math.ceil(WORLD_SIZE.width / grid);
   const rows = Math.ceil(WORLD_SIZE.height / grid);
   const key = (x, y) => `${x},${y}`;
+  const heuristic = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const open = [startCell];
   const cameFrom = new Map();
   const gScore = new Map([[key(startCell.x, startCell.y), 0]]);
-  const fScore = new Map([[key(startCell.x, startCell.y), Math.abs(startCell.x - endCell.x) + Math.abs(startCell.y - endCell.y)]]);
+  const fScore = new Map([[key(startCell.x, startCell.y), heuristic(startCell, endCell)]]);
   const closed = new Set();
 
   while (open.length) {
-    open.sort((a, b) => (fScore.get(key(a.x, a.y)) || Infinity) - (fScore.get(key(b.x, b.y)) || Infinity));
+    open.sort((a, b) => (fScore.get(key(a.x, a.y)) ?? Infinity) - (fScore.get(key(b.x, b.y)) ?? Infinity));
     const current = open.shift();
     const currentKey = key(current.x, current.y);
     if (current.x === endCell.x && current.y === endCell.y) {
@@ -2965,10 +3439,10 @@ function findPath(start, target, grid = 50) {
         cursor = key(previous.x, previous.y);
       }
       cells.reverse();
-      return [...cells.map((cell) => ({ x: cell.x * grid + grid / 2, y: cell.y * grid + grid / 2 })), target];
+      return [...cells.slice(1).map((cell) => ({ x: cell.x * grid + grid / 2, y: cell.y * grid + grid / 2 })), target];
     }
     closed.add(currentKey);
-    const neighbors = [[1,0],[-1,0],[0,1],[0,-1]];
+    const neighbors = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
     for (const [dx, dy] of neighbors) {
       const nx = current.x + dx;
       const ny = current.y + dy;
@@ -2976,13 +3450,18 @@ function findPath(start, target, grid = 50) {
       const px = nx * grid + grid / 2;
       const py = ny * grid + grid / 2;
       if (!isWalkable(px, py)) continue;
+      if (dx && dy) {
+        const sideOne = isWalkable((current.x + dx) * grid + grid / 2, current.y * grid + grid / 2);
+        const sideTwo = isWalkable(current.x * grid + grid / 2, (current.y + dy) * grid + grid / 2);
+        if (!sideOne || !sideTwo) continue;
+      }
       const neighborKey = key(nx, ny);
       if (closed.has(neighborKey)) continue;
-      const tentative = (gScore.get(currentKey) || 0) + 1;
+      const tentative = (gScore.get(currentKey) || 0) + (dx && dy ? Math.SQRT2 : 1);
       if (tentative < (gScore.get(neighborKey) ?? Infinity)) {
         cameFrom.set(neighborKey, current);
         gScore.set(neighborKey, tentative);
-        fScore.set(neighborKey, tentative + Math.abs(nx - endCell.x) + Math.abs(ny - endCell.y));
+        fScore.set(neighborKey, tentative + heuristic({ x: nx, y: ny }, endCell));
         if (!open.some((cell) => cell.x === nx && cell.y === ny)) open.push({ x: nx, y: ny });
       }
     }
@@ -2993,27 +3472,36 @@ function findPath(start, target, grid = 50) {
 function moveBotToward(id, player, target, speed = 125) {
   const brain = brainFor(id);
   const now = Date.now();
-  const elapsed = clamp((now - (brain.lastMoveAt || now - 320)) / 1000, 0.08, 0.48);
+  const elapsed = clamp((now - (brain.lastMoveAt || now - 320)) / 1000, 0.08, 0.42);
   brain.lastMoveAt = now;
-  const targetKey = `${Math.round(target.x / 20)},${Math.round(target.y / 20)}`;
-  if (brain.targetKey !== targetKey || !brain.path.length || now - brain.pathMadeAt > 4500) {
+  const targetKey = `${Math.round(target.x / 18)},${Math.round(target.y / 18)}`;
+  const movedSinceLast = brain.lastPosition ? distance(player, brain.lastPosition) : Infinity;
+  if (movedSinceLast > 12) {
+    brain.lastProgressAt = now;
+    brain.lastPosition = { x: player.x, y: player.y };
+  }
+  const stuck = now - brain.lastProgressAt > 1400;
+  if (brain.targetKey !== targetKey || !brain.path.length || now - brain.pathMadeAt > 2600 || stuck) {
     brain.targetKey = targetKey;
     brain.path = findPath(player, target);
     brain.pathMadeAt = now;
+    brain.lastProgressAt = now;
+    brain.lastPosition = { x: player.x, y: player.y };
   }
-  while (brain.path.length && distance(player, brain.path[0]) < 34) brain.path.shift();
+  while (brain.path.length && distance(player, brain.path[0]) < 28) brain.path.shift();
   const waypoint = brain.path[0] || target;
   const dx = waypoint.x - player.x;
   const dy = waypoint.y - player.y;
   const length = Math.hypot(dx, dy) || 1;
   const step = speed * elapsed;
-  const next = {
-    x: player.x + (dx / length) * Math.min(step, length),
-    y: player.y + (dy / length) * Math.min(step, length),
-  };
-  if (isWalkable(next.x, next.y)) return next;
-  brain.path = [];
-  return { x: player.x, y: player.y };
+  const proposedX = player.x + (dx / length) * Math.min(step, length);
+  const proposedY = player.y + (dy / length) * Math.min(step, length);
+  let nextX = player.x;
+  let nextY = player.y;
+  if (isWalkable(proposedX, nextY)) nextX = proposedX;
+  if (isWalkable(nextX, proposedY)) nextY = proposedY;
+  if (nextX === player.x && nextY === player.y) brain.path = [];
+  return { x: nextX, y: nextY };
 }
 
 function chooseBotTask(id, player, secret) {
@@ -3072,25 +3560,23 @@ async function runBotsInGame() {
     if (!secret?.role) continue;
     const role = secret.role;
     const brain = brainFor(bot.id);
+    if ((bot.stunnedUntil || 0) > now) continue;
     let target = null;
 
-    const nearbyUnreported = nearestBody(bot, 64, false);
-    if (nearbyUnreported && Math.random() < 0.28) {
-      await initiateMeeting(`${bot.name} reported ${nearbyUnreported.victimName}'s body.`, nearbyUnreported.id, bot.id);
-      return;
-    }
+    const nearbyBody = nearestBody(bot, 105, false);
 
     if (role === "Chef" && !bot.reviveUsed) {
       const bodies = Object.entries(state.bodies)
         .map(([id, body]) => ({ id, ...body }))
-        .filter((body) => state.players[body.victimId]?.deathCause === "chameleon")
+        .filter((body) => !body.reported && state.players[body.victimId]?.deathCause === "chameleon")
         .sort((a, b) => distance(bot, a) - distance(bot, b));
       if (bodies[0]) {
         target = bodies[0];
-        if (distance(bot, target) < 58) {
+        if (distance(bot, target) < 66) {
           const body = target;
           updates[roomPath(`players/${body.victimId}/alive`)] = true;
           updates[roomPath(`players/${body.victimId}/deathCause`)] = null;
+          updates[roomPath(`players/${body.victimId}/killedAt`)] = null;
           updates[roomPath(`players/${body.victimId}/x`)] = body.x;
           updates[roomPath(`players/${body.victimId}/y`)] = body.y;
           updates[roomPath(`players/${bot.id}/reviveUsed`)] = true;
@@ -3101,25 +3587,63 @@ async function runBotsInGame() {
       }
     }
 
+    if (nearbyBody && (role !== "Chameleon" || Math.random() < 0.16)) {
+      if (distance(bot, nearbyBody) <= 74) {
+        if (Object.keys(updates).length) await update(ref(db), updates);
+        await initiateMeeting(`${bot.name} reported ${nearbyBody.victimName}'s body.`, nearbyBody.id, bot.id);
+        return;
+      }
+      target = nearbyBody;
+    }
+
+    if (role === "Alchemist" && Number(bot.dartsRemaining || 0) > 0 && now >= (brain.nextDartAt || 0)) {
+      let dartTarget = null;
+      if (nearbyBody && now - (nearbyBody.createdAt || 0) < 9000) {
+        dartTarget = alivePlayers()
+          .filter((player) => player.id !== bot.id)
+          .sort((a, b) => distance(a, nearbyBody) - distance(b, nearbyBody))[0] || null;
+      } else {
+        const closePlayers = alivePlayers()
+          .filter((player) => player.id !== bot.id && distance(bot, player) <= 125)
+          .sort((a, b) => distance(bot, a) - distance(bot, b));
+        if (closePlayers.length && Math.random() < 0.018) dartTarget = closePlayers[0];
+      }
+      if (dartTarget && distance(bot, dartTarget) <= 280) {
+        await shootAlchemistDart(bot.id, dartTarget.id);
+        brain.nextDartAt = now + 4500;
+      }
+    }
+
     if (role === "Chameleon") {
       const possible = alivePlayers().filter((player) => player.id !== bot.id);
-      possible.sort((a, b) => distance(bot, a) - distance(bot, b));
-      target = possible[0] || chooseWanderTarget(bot.id);
-      if (target?.id && distance(bot, target) < 56 && (bot.killReadyAt || 0) <= now && Math.random() < 0.72) {
-        await performKill(bot.id);
+      const scored = possible.map((player) => {
+        const witnesses = possible.filter((other) => other.id !== player.id && distance(other, player) < 165).length;
+        const taskThreat = Object.keys(player.completedTasks || {}).length;
+        return {
+          player,
+          witnesses,
+          score: distance(bot, player) + witnesses * 210 - taskThreat * 9 + Math.random() * 35,
+        };
+      }).sort((a, b) => a.score - b.score);
+      const choice = scored[0];
+      target = choice?.player || chooseWanderTarget(bot.id);
+      if (choice?.player && distance(bot, choice.player) < 58 && (bot.killReadyAt || 0) <= now && choice.witnesses <= 1) {
+        await performKill(bot.id, choice.player.id);
+        brain.path = [];
         continue;
       }
-      if ((bot.invisReadyAt || 0) <= now && Math.random() < 0.055) {
+      if ((bot.invisReadyAt || 0) <= now && choice?.player && distance(bot, choice.player) < 260 && (choice.witnesses > 0 || Math.random() < 0.16)) {
         updates[roomPath(`players/${bot.id}/invisibleUntil`)] = now + 5000;
         updates[roomPath(`players/${bot.id}/invisReadyAt`)] = now + 20000;
       }
     } else if (TASKER_ROLES.has(role)) {
       const task = chooseBotTask(bot.id, bot, secret);
       if (task) {
-        target = task;
-        if (distance(bot, task) < 46) {
+        target = target || task;
+        if (distance(bot, task) < 48) {
           if (!brain.taskSince) brain.taskSince = now;
-          if (now - brain.taskSince > 1200) {
+          const solveTime = role === "Advisor" ? 950 : 1150;
+          if (now - brain.taskSince > solveTime) {
             updates[roomPath(`players/${bot.id}/completedTasks/${task.assignmentId}`)] = true;
             brain.taskSince = 0;
             brain.path = [];
@@ -3131,7 +3655,7 @@ async function runBotsInGame() {
       }
     }
 
-    if (role === "Advisor" && (bot.mapReadyAt || 0) <= now && Math.random() < 0.04) {
+    if (role === "Advisor" && (bot.mapReadyAt || 0) <= now && Math.random() < 0.08) {
       updates[roomPath(`players/${bot.id}/mapReadyAt`)] = now + 20000;
     }
 
@@ -3139,10 +3663,12 @@ async function runBotsInGame() {
 
     if (SEWER_ROLES.has(role)) {
       const grate = nearestSewer(bot);
-      if (grate && Math.random() < 0.045) {
-        const destinations = sewerDestinationsFor(grate);
-        const destination = destinations[Math.floor(Math.random() * destinations.length)];
-        if (destination) {
+      const farFromTarget = target && distance(bot, target) > 520;
+      if (grate && (farFromTarget || role === "Chameleon") && Math.random() < 0.09) {
+        const destinations = sewerDestinationsFor(grate)
+          .sort((a, b) => distance(a, target) - distance(b, target));
+        const destination = destinations[0];
+        if (destination && distance(destination, target) + 140 < distance(bot, target)) {
           updates[roomPath(`players/${bot.id}/x`)] = destination.x;
           updates[roomPath(`players/${bot.id}/y`)] = destination.y - 30;
           brain.path = [];
@@ -3151,26 +3677,21 @@ async function runBotsInGame() {
       }
     }
 
-    if (distance(bot, LEVER) < 60 && now - (state.meta?.lastMeetingAt || 0) > 45000 && Math.random() < 0.008) {
-      await initiateMeeting(`${bot.name} pulled the emergency council lever.`, null, bot.id);
-      return;
-    }
-
-    const next = moveBotToward(bot.id, bot, target, role === "Chameleon" ? 145 : 120);
+    const next = moveBotToward(bot.id, bot, target, role === "Chameleon" ? 158 : 138);
     updates[roomPath(`players/${bot.id}/x`)] = next.x;
     updates[roomPath(`players/${bot.id}/y`)] = next.y;
     updates[roomPath(`players/${bot.id}/lastSeen`)] = now;
 
-    if (now >= brain.nextAmbientAt && now - state.lastBotChatAt >= 18000 && Math.random() < 0.12) {
-      brain.nextAmbientAt = now + 90000 + Math.random() * 90000;
+    if (now >= brain.nextAmbientAt && now - state.lastBotChatAt >= 14000 && Math.random() < 0.18) {
+      brain.nextAmbientAt = now + 65000 + Math.random() * 70000;
       state.lastBotChatAt = now;
+      const room = ROOMS.find((candidate) => pointInRect(bot.x, bot.y, candidate, -8));
       const lines = [
-        "I am checking the west wing.",
-        "The castle feels unusually quiet.",
-        "I still have royal duties to finish.",
-        "Has anyone seen something suspicious?",
-        "Meet me near the Great Hall.",
-        "I heard footsteps by the old chapel.",
+        `I am checking ${room?.name || "the corridors"}.`,
+        "I am moving to my next royal duty.",
+        "Stay alert near the sewer grates.",
+        "I will report anything suspicious immediately.",
+        "Try not to travel alone.",
       ];
       sendMessage(lines[Math.floor(Math.random() * lines.length)], { uid: bot.id, sender: bot.name, bot: true });
     }
@@ -3185,51 +3706,76 @@ async function runBotMeetingActions() {
   const now = Date.now();
   const bots = activePlayers().filter((player) => player.isBot && player.alive);
   const updates = {};
+  const reportedBody = meeting.bodyId ? state.bodies[meeting.bodyId] : null;
   let meetingChatCount = bots.filter((bot) => brainFor(bot.id).meetingSpoken === meeting.id).length;
+
+  const suspicionScore = (candidate, observer) => {
+    let score = Math.random() * 28;
+    if (reportedBody) {
+      score += Math.max(0, 320 - distance(candidate, reportedBody)) * 1.25;
+      if (candidate.id === meeting.callerId) score -= 150;
+    }
+    score -= Object.keys(candidate.completedTasks || {}).length * 5;
+    if ((candidate.stunnedUntil || 0) > (meeting.createdAt || 0)) score -= 15;
+    if (candidate.id === observer.id) score = -Infinity;
+    return score;
+  };
 
   for (const bot of bots) {
     const brain = brainFor(bot.id);
-    if (meetingChatCount < 2 && brain.meetingSpoken !== meeting.id && now - meeting.createdAt > 4500 + Math.random() * 7000 && Math.random() < 0.08) {
+    const role = state.allSecrets[bot.id]?.role;
+    const candidates = alivePlayers().filter((player) => player.id !== bot.id);
+    const ranked = candidates
+      .map((candidate) => ({ candidate, score: suspicionScore(candidate, bot) }))
+      .sort((a, b) => b.score - a.score);
+
+    if (meetingChatCount < 3 && brain.meetingSpoken !== meeting.id && now - meeting.createdAt > 2800 + Math.random() * 4200 && Math.random() < 0.2) {
       brain.meetingSpoken = meeting.id;
       meetingChatCount += 1;
-      const lines = [
-        "Where was the body found?",
-        "I was doing a duty in another room.",
-        "Someone used the corridor right before the meeting.",
-        "I do not have enough proof yet.",
-        "Watch who changes their story.",
-        "I saw movement near a sewer grate.",
-      ];
-      sendMessage(lines[Math.floor(Math.random() * lines.length)], { uid: bot.id, sender: bot.name, bot: true });
+      let line;
+      if (reportedBody && ranked[0]) {
+        const closestName = ranked[0].candidate.name;
+        line = ranked[0].candidate.id === meeting.callerId
+          ? `${closestName} reported it, so I am not accusing them yet.`
+          : `${closestName} was closest to the reported area.`;
+      } else {
+        line = "There is not enough evidence; watch the movement routes.";
+      }
+      sendMessage(line, { uid: bot.id, sender: bot.name, bot: true });
     }
 
     if (!brain.voteAt || brain.voteMeeting !== meeting.id) {
       brain.voteMeeting = meeting.id;
-      brain.voteAt = meeting.createdAt + 4500 + Math.random() * 13000;
+      brain.voteAt = meeting.createdAt + 4200 + Math.random() * 8500;
     }
     if (!meeting.votes?.[bot.id] && meeting.mutedPlayerId !== bot.id && now >= brain.voteAt) {
-      const candidates = alivePlayers().filter((player) => player.id !== bot.id);
-      if (Math.random() < 0.2) {
+      if (!candidates.length) {
         updates[roomPath(`meeting/votes/${bot.id}`)] = ABSTAIN_VOTE;
-      } else if (candidates.length) {
-        const candidate = candidates[Math.floor(Math.random() * candidates.length)];
-        updates[roomPath(`meeting/votes/${bot.id}`)] = candidate.id;
+      } else if (role === "Chameleon") {
+        const deflection = candidates
+          .filter((candidate) => candidate.id === meeting.callerId || Object.keys(candidate.completedTasks || {}).length < 2)
+          .sort(() => Math.random() - 0.5)[0] || ranked[0]?.candidate || candidates[0];
+        updates[roomPath(`meeting/votes/${bot.id}`)] = deflection.id;
+      } else if (!reportedBody && Math.random() < 0.55) {
+        updates[roomPath(`meeting/votes/${bot.id}`)] = ABSTAIN_VOTE;
+      } else if (ranked[0]) {
+        const uncertain = ranked.length > 1 && ranked[0].score - ranked[1].score < 35;
+        updates[roomPath(`meeting/votes/${bot.id}`)] = uncertain && Math.random() < 0.34
+          ? ABSTAIN_VOTE
+          : ranked[0].candidate.id;
       }
     }
 
-    if (state.allSecrets[bot.id]?.role === "King" && !meeting.decreeBy && now - meeting.createdAt > 2800) {
-      const candidates = alivePlayers().filter((player) => player.id !== bot.id);
-      if (candidates.length) {
-        const target = candidates[Math.floor(Math.random() * candidates.length)];
-        updates[roomPath("meeting/mutedPlayerId")] = target.id;
-        updates[roomPath("meeting/decreeBy")] = bot.id;
-        updates[roomPath(`meeting/votes/${target.id}`)] = null;
-        sendMessage(`${bot.name} issued a Royal Decree: ${target.name} may not vote.`, {
-          system: true,
-          sender: "Castle Herald",
-          uid: "system",
-        });
-      }
+    if (role === "King" && !meeting.decreeBy && now - meeting.createdAt > 3400 && ranked[0]) {
+      const target = ranked[0].candidate;
+      updates[roomPath("meeting/mutedPlayerId")] = target.id;
+      updates[roomPath("meeting/decreeBy")] = bot.id;
+      updates[roomPath(`meeting/votes/${target.id}`)] = null;
+      sendMessage(`${bot.name} issued a Royal Decree: ${target.name} may not vote.`, {
+        system: true,
+        sender: "Castle Herald",
+        uid: "system",
+      });
     }
   }
 
