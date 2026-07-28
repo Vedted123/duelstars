@@ -131,6 +131,14 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .mini-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .mini-list span { padding: 5px 7px; border-radius: 7px; background: rgba(255,255,255,.06); color: var(--muted); font-size: 11px; }
 .mini-list span.on-pad { color: #211b06; background: var(--gold); }
+.owner-panel { margin-top: 14px; padding: 12px; border-radius: 11px; background: rgba(240,201,75,.08); border: 1px solid rgba(240,201,75,.28); }
+.owner-panel h3 { margin: 0 0 7px; color: var(--gold-2); font-size: 12px; letter-spacing: .09em; text-transform: uppercase; }
+.owner-panel p { margin: 0 0 9px; }
+.owner-role-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.owner-role-row label { margin: 0; }
+.owner-role-row select { width: 100%; margin-top: 7px; padding: 10px 12px; color: var(--ink); background: rgba(6,6,10,.72); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; }
+.owner-role-reveal { display: grid; gap: 5px; margin-top: 8px; padding: 9px; border-radius: 9px; background: rgba(0,0,0,.22); color: var(--muted); font-size: 12px; }
+.owner-role-reveal strong { color: var(--gold-2); }
 
 .task-panel { max-height: 55vh; overflow: auto; }
 .task-row { display: flex; gap: 9px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.07); color: var(--muted); font-size: 13px; }
@@ -191,7 +199,7 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .meeting-player-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 18px; }
 .meeting-player { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; padding: 12px; background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; }
 .meeting-player.dead { opacity: .42; }
-.player-token { width: 34px; height: 34px; border-radius: 50%; border: 3px double rgba(255,255,255,.48); box-shadow: inset 0 -8px rgba(0,0,0,.18); }
+.player-token { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 9px; color: var(--gold-2); background: rgba(0,0,0,.28); border: 2px solid rgba(255,255,255,.34); box-shadow: inset 0 -7px rgba(0,0,0,.14); font-size: 23px; font-weight: 950; line-height: 1; }
 .player-actions { grid-column: 1 / -1; display: flex; gap: 6px; }
 .vote-button, .decree-button { flex: 1; padding: 7px; font-size: 11px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); }
 .vote-button.selected { color: #211b06; background: var(--gold); }
@@ -328,6 +336,27 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
       <p id="voteStatus" class="status-text"></p>
       <button id="customizeButton" class="customize-button">Customize character (Tab)</button>
       <div id="lobbyPlayers" class="mini-list"></div>
+      <div id="ownerPanel" class="owner-panel hidden">
+        <h3>Owner controls</h3>
+        <p>Only <strong>sinister_mark405</strong> can lock their own role before the match.</p>
+        <div class="owner-role-row">
+          <label>
+            Your role
+            <select id="ownerRoleSelect">
+              <option value="">Random</option>
+              <option value="Peasant">Peasant</option>
+              <option value="Chameleon">Chameleon</option>
+              <option value="Mason">Mason</option>
+              <option value="King">King</option>
+              <option value="Advisor">Advisor</option>
+              <option value="Chef">Chef</option>
+              <option value="Alchemist">Alchemist</option>
+            </select>
+          </label>
+          <button id="saveOwnerRoleButton" class="small-button">Save</button>
+        </div>
+        <p id="ownerRoleStatus" class="status-text"></p>
+      </div>
     </aside>
 
     <aside id="taskPanel" class="panel task-panel hidden">
@@ -521,6 +550,20 @@ const LEVER = { x: 950 * MAP_SCALE, y: 570 * MAP_SCALE, radius: 34 };
 const ROLE_DECK = [
   "Peasant", "Peasant", "Peasant", "Peasant",
   "Chameleon", "Mason", "King", "Advisor", "Chef", "Alchemist",
+];
+const OWNER_USERNAME = "sinister_mark405";
+const EMERGENCY_MEETING_COOLDOWN_MS = 60_000;
+const PLAYER_SHAPES = [
+  { id: "circle", symbol: "●", label: "Circle" },
+  { id: "triangle", symbol: "▲", label: "Triangle" },
+  { id: "square", symbol: "■", label: "Square" },
+  { id: "diamond", symbol: "◆", label: "Diamond" },
+  { id: "star", symbol: "★", label: "Star" },
+  { id: "hexagon", symbol: "⬢", label: "Hexagon" },
+  { id: "cross", symbol: "✚", label: "Cross" },
+  { id: "crescent", symbol: "☾", label: "Crescent" },
+  { id: "heart", symbol: "♥", label: "Heart" },
+  { id: "spade", symbol: "♠", label: "Spade" },
 ];
 const TASKER_ROLES = new Set(["Peasant", "Mason", "Advisor", "Chef", "Alchemist"]);
 const SEWER_ROLES = new Set(["Mason", "Chameleon"]);
@@ -719,6 +762,7 @@ const state = {
   hudUpdateAt: 0,
   connectionOkay: true,
   lastBotChatAt: 0,
+  ownerRevealActive: false,
 };
 
 function roomPath(suffix = "") {
@@ -831,6 +875,20 @@ function getMyPlayer() {
 
 function isHost() {
   return Boolean(state.uid && state.meta?.hostId === state.uid);
+}
+
+function isOwnerPlayer(player = getMyPlayer()) {
+  return String(player?.name || "") === OWNER_USERNAME;
+}
+
+function shapeDefinition(shapeId, playerId = "") {
+  return PLAYER_SHAPES.find((shape) => shape.id === shapeId)
+    || PLAYER_SHAPES[hashNumber(playerId || "shape") % PLAYER_SHAPES.length];
+}
+
+function emergencyMeetingCooldownRemaining(now = Date.now()) {
+  const lastMeetingAt = Number(state.meta?.lastMeetingAt || 0);
+  return Math.max(0, EMERGENCY_MEETING_COOLDOWN_MS - (now - lastMeetingAt));
 }
 
 function currentPhase() {
@@ -983,18 +1041,36 @@ async function joinRoom() {
   $("joinStatus").textContent = "Opening the castle gates…";
 
   try {
+    const metaRef = ref(db, roomPath("meta"));
+    const metaSnapshot = await get(metaRef);
+    const meta = metaSnapshot.val() || {};
+    if (meta.state === "ended" || meta.closed) {
+      throw new Error("This match has finished and cannot be joined again. Use a new room code.");
+    }
+
+    if (name === OWNER_USERNAME) {
+      const playersSnapshot = await get(ref(db, roomPath("players")));
+      const ownerAlreadyConnected = Object.entries(playersSnapshot.val() || {}).some(([id, player]) =>
+        id !== state.uid && player?.connected && String(player?.name || "") === OWNER_USERNAME
+      );
+      if (ownerAlreadyConnected) throw new Error("The owner username is already connected in this room.");
+    }
+
     const hostRef = ref(db, roomPath("meta/hostId"));
     await runTransaction(hostRef, (current) => current || state.uid);
 
-    const metaSnapshot = await get(ref(db, roomPath("meta")));
-    const meta = metaSnapshot.val() || {};
     const metaUpdates = {
       maxPlayers: MAX_PLAYERS,
-      state: meta.state || "lobby",
       createdAt: meta.createdAt || Date.now(),
       updatedAt: serverTimestamp(),
     };
-    await update(ref(db, roomPath("meta")), metaUpdates);
+    if (!meta.state) metaUpdates.state = "lobby";
+    await update(metaRef, metaUpdates);
+
+    const currentMeta = (await get(metaRef)).val() || {};
+    if (currentMeta.state === "ended" || currentMeta.closed) {
+      throw new Error("This match has finished and cannot be joined again. Use a new room code.");
+    }
 
     const playerRef = ref(db, roomPath(`players/${state.uid}`));
     const existing = (await get(playerRef)).val();
@@ -1092,6 +1168,7 @@ function beginRoomListeners() {
     renderLobbyPanel();
     renderMeetingPlayers();
     maybeClaimHost();
+    maybeAttachHostSecrets();
     maybeHostActions();
   }));
 
@@ -1134,6 +1211,7 @@ function handleMetaChange() {
     if (phase === "lobby" || phase === "ended") {
       state.controlsVisible = false;
       state.tasksVisible = false;
+      state.ownerRevealActive = false;
       closeTaskGame(false);
     }
     state.lastPhase = phase;
@@ -1141,7 +1219,7 @@ function handleMetaChange() {
   $("phaseLabel").textContent = phase.toUpperCase();
   $("roomLabel").textContent = state.roomId === PUBLIC_ROOM_ID ? "Public Lobby" : `Private Room ${state.roomId}`;
   $("connectionLabel").textContent = "Online";
-  $("hostLabel").textContent = isHost() ? "You are host" : "Networked";
+  $("hostLabel").textContent = isOwnerPlayer() ? "Owner" : (isHost() ? "Match host" : "Networked");
   setVisible("lobbyPanel", phase === "lobby");
   setVisible("endOverlay", phase === "ended");
 
@@ -1191,7 +1269,7 @@ async function maybeClaimHost() {
 }
 
 function maybeAttachHostSecrets() {
-  if (!isHost()) {
+  if (!isHost() && !isOwnerPlayer()) {
     state.hostSecretsUnsub?.();
     state.hostSecretsUnsub = null;
     state.allSecrets = state.secret ? { [state.uid]: state.secret } : {};
@@ -1200,8 +1278,9 @@ function maybeAttachHostSecrets() {
   if (state.hostSecretsUnsub) return;
   state.hostSecretsUnsub = onValue(ref(db, `roomSecrets/${state.roomId}`), (snapshot) => {
     state.allSecrets = snapshot.val() || {};
+    renderRolePanel();
     maybeHostActions();
-  }, (error) => console.warn("Could not read host secrets", error));
+  }, (error) => console.warn("Could not read privileged role data", error));
 }
 
 function chatPath(channel = "auto", matchId = state.meta?.matchId) {
@@ -1338,7 +1417,29 @@ function renderLobbyPanel() {
     tag.textContent = `${player.name}${player.id === state.uid ? " (you)" : ""}`;
     list.appendChild(tag);
   }
+
+  const owner = isOwnerPlayer(me);
+  setVisible("ownerPanel", owner);
+  if (owner) {
+    const selectedRole = ROLE_DECK.includes(me?.ownerPreferredRole) ? me.ownerPreferredRole : "";
+    if ($("ownerRoleSelect").value !== selectedRole) $("ownerRoleSelect").value = selectedRole;
+    $("ownerRoleStatus").textContent = selectedRole
+      ? `${selectedRole} is locked for your next match.`
+      : "Your role will be random.";
+  }
 }
+
+$("saveOwnerRoleButton").addEventListener("click", async () => {
+  const me = getMyPlayer();
+  if (!isOwnerPlayer(me) || currentPhase() !== "lobby") return;
+  const chosenRole = $("ownerRoleSelect").value;
+  if (chosenRole && !ROLE_DECK.includes(chosenRole)) return;
+  await set(ref(db, roomPath(`players/${state.uid}/ownerPreferredRole`)), chosenRole || null);
+  $("ownerRoleStatus").textContent = chosenRole
+    ? `${chosenRole} is locked for your next match.`
+    : "Your role will be random.";
+  showToast(chosenRole ? `Owner role set to ${chosenRole}` : "Owner role set to random");
+});
 
 $("startVoteButton").addEventListener("click", async () => {
   const me = getMyPlayer();
@@ -1380,6 +1481,18 @@ async function startGame(realParticipants) {
     const botIds = Array.from({ length: botCount }, (_, index) => `bot_${matchId}_${index}`);
     const allIds = [...participantIds, ...botIds];
     const roles = shuffle(ROLE_DECK);
+    const participantLookup = Object.fromEntries(realParticipants.map((player) => [player.id, player]));
+    const ownerIndex = allIds.findIndex((id) =>
+      String((participantLookup[id] || state.players[id])?.name || "") === OWNER_USERNAME
+    );
+    const ownerPreferredRole = ownerIndex >= 0
+      ? (participantLookup[allIds[ownerIndex]] || state.players[allIds[ownerIndex]])?.ownerPreferredRole
+      : "";
+    if (ownerIndex >= 0 && ROLE_DECK.includes(ownerPreferredRole)) {
+      const preferredIndex = roles.indexOf(ownerPreferredRole);
+      if (preferredIndex >= 0) [roles[ownerIndex], roles[preferredIndex]] = [roles[preferredIndex], roles[ownerIndex]];
+    }
+    const shapes = shuffle(PLAYER_SHAPES.map((shape) => shape.id));
     const taskPool = shuffle(TASKS.map((task) => task.id));
     const updates = {};
     let tasksIssued = 0;
@@ -1419,6 +1532,7 @@ async function startGame(realParticipants) {
         color: isBot ? botCustomization.color : normalizeCustomization(existing, id).color,
         outfit: isBot ? botCustomization.outfit : normalizeCustomization(existing, id).outfit,
         accessory: isBot ? botCustomization.accessory : normalizeCustomization(existing, id).accessory,
+        shape: shapes[index],
         completedTasks: {},
         killReadyAt: Date.now() + 9000,
         invisReadyAt: Date.now() + 4000,
@@ -1449,7 +1563,7 @@ async function startGame(realParticipants) {
       state: "game",
       matchId,
       startedAt: Date.now(),
-      lastMeetingAt: 0,
+      lastMeetingAt: Date.now(),
       totalTasks: TASK_GOAL,
       tasksIssued,
       winner: null,
@@ -1553,6 +1667,27 @@ function renderRolePanel() {
   addButton("F", "Interact / solve duty", TASKER_ROLES.has(role) ? "Press near task" : "Castle objects", handleInteraction, {
     disabled: currentPhase() !== "game" || !me.alive || stunned,
   });
+  if (isOwnerPlayer(me)) {
+    addButton("O", state.ownerRevealActive ? "Hide all roles" : "Reveal all roles", "Owner only", () => {
+      state.ownerRevealActive = !state.ownerRevealActive;
+      renderRolePanel();
+    }, { ready: state.ownerRevealActive });
+
+    if (state.ownerRevealActive) {
+      const reveal = document.createElement("div");
+      reveal.className = "owner-role-reveal";
+      for (const player of activePlayers()) {
+        const row = document.createElement("div");
+        const playerName = document.createElement("strong");
+        playerName.textContent = player.name || "Unknown";
+        const roleName = state.allSecrets[player.id]?.role || "Loading…";
+        row.append(playerName, document.createTextNode(` — ${roleName}`));
+        reveal.appendChild(row);
+      }
+      list.appendChild(reveal);
+    }
+  }
+
   addButton("Q", "Leave match", state.secret?.role === "Chameleon" ? "Loyal court wins" : "Exit immediately", leaveCurrentGame, {
     danger: true,
     disabled: !["game", "meeting", "starting", "ended"].includes(currentPhase()),
@@ -2218,8 +2353,11 @@ async function initiateMeeting(reason, bodyId = null, callerId = state.uid) {
   const caller = state.players[callerId];
   if (currentPhase() !== "game" || !caller?.alive) return false;
   const now = Date.now();
-  if (!bodyId && now - (state.meta?.lastMeetingAt || 0) < 30000) {
-    if (callerId === state.uid) showToast("The council lever is cooling down");
+  const cooldownRemaining = emergencyMeetingCooldownRemaining(now);
+  if (!bodyId && cooldownRemaining > 0) {
+    if (callerId === state.uid) {
+      showToast(`The council lever is cooling down for ${Math.ceil(cooldownRemaining / 1000)} more second(s)`);
+    }
     return false;
   }
 
@@ -2332,7 +2470,9 @@ function renderMeetingPlayers() {
     card.className = `meeting-player${player.alive ? "" : " dead"}`;
     const token = document.createElement("div");
     token.className = "player-token";
-    token.style.background = player.color || colorForId(player.id);
+    const shape = shapeDefinition(player.shape, player.id);
+    token.textContent = shape.symbol;
+    token.title = shape.label;
     const info = document.createElement("div");
     const name = document.createElement("strong");
     name.textContent = `${player.name}${player.id === state.uid ? " (you)" : ""}`;
@@ -2406,6 +2546,7 @@ async function processMeetingHost() {
       } else {
         const updates = {};
         updates[roomPath("meta/state")] = "game";
+        updates[roomPath("meta/lastMeetingAt")] = Date.now();
         updates[roomPath("meeting")] = null;
         await update(ref(db), updates);
         await checkWinConditions();
@@ -2506,6 +2647,7 @@ async function endGame(winner, text) {
     winner,
     endText: text,
     endedAt: Date.now(),
+    closed: true,
   });
   await sendMessage(text, { system: true, sender: "Castle Herald", uid: "system", channel: "game" });
 }
@@ -2526,6 +2668,7 @@ async function resetToLobby() {
       updates[roomPath(`players/${id}/deathCause`)] = null;
       updates[roomPath(`players/${id}/onPad`)] = false;
       updates[roomPath(`players/${id}/completedTasks`)] = null;
+      updates[roomPath(`players/${id}/shape`)] = null;
       updates[roomPath(`players/${id}/x`)] = 590 + Math.random() * 100;
       updates[roomPath(`players/${id}/y`)] = 555 + Math.random() * 70;
     }
@@ -2666,7 +2809,10 @@ function updateInteractionPrompt() {
       } else if (sewer && SEWER_ROLES.has(state.secret?.role)) {
         text = "F: Enter the castle sewers";
       } else if (distance(state.localPos, LEVER) <= 68) {
-        text = "F: Pull the emergency council lever";
+        const cooldownRemaining = emergencyMeetingCooldownRemaining();
+        text = cooldownRemaining > 0
+          ? `Emergency council cooldown: ${Math.ceil(cooldownRemaining / 1000)}s`
+          : "F: Pull the emergency council lever";
       }
     }
   }
@@ -2695,6 +2841,7 @@ async function leaveCurrentGame() {
     updates[roomPath("meta/winner")] = "loyalists";
     updates[roomPath("meta/endText")] = `${leavingName}, the Chameleon, left the match. The loyal court wins.`;
     updates[roomPath("meta/endedAt")] = Date.now();
+    updates[roomPath("meta/closed")] = true;
   }
   try {
     await update(ref(db), updates);
@@ -2726,6 +2873,7 @@ function exitToJoinScreen(previousRoomId) {
   state.controlsVisible = false;
   state.tasksVisible = false;
   state.chatOpen = false;
+  state.ownerRevealActive = false;
   state.lastPhase = "join";
   state.keys = {};
   closeTaskGame(false);
@@ -2775,6 +2923,13 @@ window.addEventListener("keydown", (event) => {
   if (key === "t") {
     event.preventDefault();
     toggleTasksPanel();
+    return;
+  }
+  if (key === "o" && isOwnerPlayer() && ["game", "meeting"].includes(currentPhase())) {
+    event.preventDefault();
+    state.ownerRevealActive = !state.ownerRevealActive;
+    state.controlsVisible = true;
+    renderRolePanel();
     return;
   }
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) event.preventDefault();
@@ -3305,15 +3460,24 @@ function renderMapOverlay(now) {
   }
   for (const [id, player] of Object.entries(state.players)) {
     if (!player.inMatch) continue;
-    mapCtx.fillStyle = player.alive ? (player.color || colorForId(id)) : "#6c6254";
-    mapCtx.beginPath();
-    mapCtx.arc(player.x * sx, player.y * sy, id === state.uid ? 8 : 6, 0, Math.PI * 2);
-    mapCtx.fill();
+    const shape = shapeDefinition(player.shape, id);
+    const x = player.x * sx;
+    const y = player.y * sy;
+    mapCtx.save();
+    mapCtx.globalAlpha = player.alive ? 1 : 0.48;
+    mapCtx.fillStyle = "#3f2d19";
+    mapCtx.font = `${id === state.uid ? 24 : 20}px Georgia, serif`;
+    mapCtx.textAlign = "center";
+    mapCtx.textBaseline = "middle";
+    mapCtx.fillText(shape.symbol, x, y);
     if (id === state.uid) {
       mapCtx.strokeStyle = "#fff7d0";
-      mapCtx.lineWidth = 3;
+      mapCtx.lineWidth = 2.5;
+      mapCtx.beginPath();
+      mapCtx.arc(x, y, 13, 0, Math.PI * 2);
       mapCtx.stroke();
     }
+    mapCtx.restore();
   }
 }
 
