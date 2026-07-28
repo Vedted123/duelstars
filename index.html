@@ -1,179 +1,3250 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duel Stars Online  by ved the goat jkladfjka</title>
-<style>
-  html,body{margin:0;overflow:hidden;background:#05070d;font-family:Arial,sans-serif;user-select:none;color:white}
-  button,input,select{font-family:inherit}
-  #hud{position:fixed;left:16px;top:12px;z-index:5;text-shadow:0 2px 4px #000;font-size:17px;line-height:1.35}
-  #msg{position:fixed;top:82px;width:100%;text-align:center;z-index:7;font-size:30px;font-weight:900;color:#ffe66d;text-shadow:0 3px 7px #000;pointer-events:none}
-  #hint{position:fixed;bottom:92px;width:100%;text-align:center;z-index:7;font-size:20px;font-weight:800;text-shadow:0 3px 7px #000;pointer-events:none}
-  #crosshair{position:fixed;left:50%;top:50%;width:20px;height:20px;transform:translate(-50%,-50%);z-index:6;pointer-events:none}
-  #crosshair:before,#crosshair:after{content:"";position:absolute;background:#fff;box-shadow:0 0 5px #000}
-  #crosshair:before{left:9px;top:0;width:2px;height:20px} #crosshair:after{left:0;top:9px;width:20px;height:2px}
-  #scopeOverlay{display:none;position:fixed;inset:0;z-index:8;pointer-events:none;background:radial-gradient(circle at center, transparent 0 24%, rgba(0,0,0,.92) 25% 100%)}
-  #scopeOverlay:before{content:"";position:absolute;left:50%;top:50%;width:46vmin;height:46vmin;border:3px solid rgba(255,255,255,.85);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 20px #000 inset,0 0 16px #000}
-  #scopeOverlay:after{content:"+";position:absolute;left:50%;top:50%;transform:translate(-50%,-52%);font-size:46px;color:#fff;text-shadow:0 0 8px #000}
-  #weaponBar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;z-index:7}
-  .slot{min-width:116px;padding:10px 8px;text-align:center;border-radius:12px;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.22);font-weight:900;text-shadow:0 2px 4px #000;font-size:14px}
-  .slot small{display:block;color:rgba(255,255,255,.65);font-size:11px;margin-top:2px}.active{border-color:#00e5ff;box-shadow:0 0 16px rgba(0,229,255,.55);color:#8cf7ff}
-  #settingsBtn{position:fixed;right:18px;bottom:18px;z-index:10;border:2px solid rgba(140,247,255,.55);border-radius:999px;padding:12px 18px;background:rgba(0,229,255,.92);color:#061018;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 0 20px rgba(0,229,255,.28)}
-  .panel{display:none;position:fixed;right:18px;top:14px;width:380px;max-height:calc(100vh - 36px);overflow:auto;z-index:12;background:linear-gradient(180deg,rgba(12,18,34,.97),rgba(3,7,14,.95));border:2px solid rgba(140,247,255,.35);border-radius:18px;padding:14px;box-shadow:0 0 30px rgba(0,229,255,.18)}
-  .panel h2,.panel h3{margin:0;color:#8cf7ff}.panel p{color:rgba(255,255,255,.74);font-size:13px;margin:5px 0 10px}.row{display:flex;gap:8px;align-items:center}.between{justify-content:space-between}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.tab,.btn,.card button{border:0;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer;background:rgba(255,255,255,.1);color:white}.tab.on,.btn.primary{background:#00e5ff;color:#061018}.btn.danger{background:#ff4b4b;color:white}.card{border:1px solid rgba(255,255,255,.16);border-radius:14px;background:rgba(255,255,255,.06);padding:10px;margin:8px 0}.weaponGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.weaponCard{border:1px solid rgba(255,255,255,.15);border-radius:12px;background:rgba(0,0,0,.22);padding:9px}.weaponCard b{color:#fff}.weaponCard small{display:block;color:#a9dfe8;margin-top:3px}.pill{display:inline-block;border-radius:999px;padding:3px 8px;background:rgba(255,255,255,.12);font-size:12px;margin-top:5px}.locked{opacity:.55}.equipped{outline:2px solid #00e5ff}.colorPick{display:flex;gap:8px;flex-wrap:wrap}.colorSwatch{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.35);cursor:pointer}.colorSwatch.sel{border-color:#fff;box-shadow:0 0 12px #fff}input{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(0,0,0,.25);color:white;padding:10px;font-weight:700}
-  #loadoutPanel{display:none;position:fixed;inset:0;z-index:20;background:radial-gradient(circle,rgba(20,35,70,.94),rgba(0,0,0,.98));padding:28px;box-sizing:border-box;overflow:auto;text-align:center}.loadGrid{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:12px;max-width:1100px;margin:18px auto}.loadCol{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:12px;text-align:left}.loadCol h3{text-align:center;color:#8cf7ff}.loadOpt{display:block;width:100%;margin:8px 0;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:white;font-weight:900;cursor:pointer}.loadOpt.sel{background:#00e5ff;color:#061018}.loadOpt.locked{cursor:not-allowed;opacity:.4}
-  #clickToLock{position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:30;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:8px 14px;font-weight:800;color:#fff}
-  #playerList{position:fixed;right:18px;top:14px;z-index:4;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:10px;min-width:190px;text-shadow:0 2px 4px #000}.tiny{font-size:12px;color:rgba(255,255,255,.65)}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#08080d" />
+  <title>Traitor Game</title>
+  <style>
+:root {
+  color-scheme: dark;
+  --ink: #f7f0d8;
+  --muted: #a9a4b5;
+  --panel: rgba(14, 13, 21, 0.93);
+  --panel-2: rgba(27, 24, 37, 0.95);
+  --border: rgba(230, 213, 165, 0.25);
+  --gold: #f0c94b;
+  --gold-2: #fff2a8;
+  --danger: #d55252;
+  --success: #72c78d;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #07070b; }
+body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); }
+button, input { font: inherit; }
+button { color: inherit; }
+
+#app { position: relative; width: 100%; height: 100%; isolation: isolate; }
+#gameCanvas { position: absolute; inset: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a1720, #060609 74%); }
+.hidden { display: none !important; }
+.visible { display: flex !important; }
+
+.panel {
+  background: linear-gradient(180deg, rgba(34, 30, 43, 0.97), var(--panel));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow), inset 0 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+}
+
+.screen-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(5, 5, 8, 0.75);
+  backdrop-filter: blur(5px);
+}
+
+.join-card, .modal-card, .end-card { width: min(92vw, 460px); padding: 32px; text-align: center; }
+.join-card h1 { margin: 8px 0 10px; font-family: Georgia, serif; font-size: clamp(32px, 7vw, 54px); letter-spacing: -0.03em; }
+.join-card p { color: var(--muted); line-height: 1.55; }
+.crest { font-size: 58px; color: var(--gold); filter: drop-shadow(0 0 16px rgba(240, 201, 75, 0.35)); }
+
+label { display: block; margin: 18px 0; text-align: left; color: var(--muted); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+input {
+  width: 100%;
+  margin-top: 7px;
+  padding: 13px 14px;
+  color: var(--ink);
+  background: rgba(6, 6, 10, 0.65);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 10px;
+  outline: none;
+}
+input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(240, 201, 75, 0.12); }
+
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease, opacity 120ms ease;
+}
+button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { cursor: not-allowed; opacity: 0.45; }
+.primary { width: 100%; color: #211b06; background: linear-gradient(180deg, var(--gold-2), var(--gold)); box-shadow: 0 8px 24px rgba(240, 201, 75, 0.18); }
+.secondary, .small-button, .icon-button { background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.11); }
+.small-button { padding: 7px 10px; font-size: 12px; }
+.icon-button { padding: 4px 9px; font-size: 20px; }
+.status-text { min-height: 18px; color: var(--muted); font-size: 13px; }
+.join-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
+.join-actions button { min-height: 44px; }
+.customize-button { width: 100%; margin-top: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(240,201,75,.3); }
+.keycap { display: inline-grid; min-width: 24px; height: 24px; place-items: center; padding: 0 6px; border-radius: 6px; color: #221b05; background: var(--gold); font-size: 11px; font-weight: 950; box-shadow: inset 0 -2px rgba(0,0,0,.18); }
+
+
+.hud {
+  position: absolute;
+  z-index: 10;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(8, 8, 13, 0.84);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 13px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.22);
+  backdrop-filter: blur(10px);
+}
+.hud-cluster { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hud-cluster.center { justify-content: center; letter-spacing: .11em; }
+.hud-cluster.right { justify-content: flex-end; }
+.pill { padding: 4px 8px; border-radius: 999px; background: rgba(114,199,141,.15); color: #aef0c1; font-size: 11px; }
+.pill.subtle { color: var(--muted); background: rgba(255,255,255,.06); }
+
+.side-panel { position: absolute; z-index: 11; top: 74px; left: 12px; width: min(290px, calc(100vw - 24px)); padding: 18px; }
+.side-panel h2 { margin: 4px 0 8px; font-family: Georgia, serif; font-size: 28px; color: var(--gold-2); }
+.side-panel p { margin: 0; color: var(--muted); line-height: 1.45; font-size: 14px; }
+.eyebrow { color: var(--gold); font-size: 11px; font-weight: 900; letter-spacing: .14em; }
+.ability-list { display: grid; gap: 8px; margin-top: 14px; }
+.ability-button { display: flex; justify-content: space-between; align-items: center; width: 100%; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); font-size: 13px; }
+.ability-button.ready { border-color: rgba(240,201,75,.55); }
+.ability-button.danger { border-color: rgba(213,82,82,.55); }
+
+.lobby-panel, .task-panel { position: absolute; z-index: 11; right: 12px; top: 74px; width: min(310px, calc(100vw - 24px)); padding: 18px; }
+.lobby-panel h2 { margin: 0 0 8px; font-family: Georgia, serif; }
+.lobby-panel p { color: var(--muted); font-size: 13px; }
+.meter { height: 10px; margin: 12px 0; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.08); }
+.meter > div { height: 100%; width: 0; background: linear-gradient(90deg, #c89f19, #fff08b); transition: width 180ms ease; }
+.mini-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.mini-list span { padding: 5px 7px; border-radius: 7px; background: rgba(255,255,255,.06); color: var(--muted); font-size: 11px; }
+.mini-list span.on-pad { color: #211b06; background: var(--gold); }
+
+.task-panel { max-height: 55vh; overflow: auto; }
+.task-row { display: flex; gap: 9px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.07); color: var(--muted); font-size: 13px; }
+.task-row.done { color: var(--success); text-decoration: line-through; }
+.task-icon { width: 24px; flex: 0 0 24px; text-align: center; }
+
+.interaction-prompt {
+  position: absolute;
+  z-index: 12;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  min-width: 220px;
+  padding: 10px 16px;
+  text-align: center;
+  background: rgba(7,7,11,.9);
+  border: 1px solid rgba(240,201,75,.28);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font-size: 14px;
+}
+.toast { position: absolute; z-index: 80; left: 50%; top: 82px; transform: translateX(-50%); padding: 10px 15px; border-radius: 10px; background: rgba(9,9,13,.96); border: 1px solid rgba(255,255,255,.12); box-shadow: var(--shadow); }
+
+.chat-toggle { position: absolute; z-index: 20; left: 16px; bottom: 16px; width: 48px; height: 48px; border-radius: 50%; padding: 0; font-size: 24px; background: var(--gold); color: #201a05; }
+.chat-panel { position: absolute; z-index: 40; left: 16px; bottom: 16px; width: min(390px, calc(100vw - 32px)); height: min(440px, 62vh); display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; }
+.chat-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.chat-messages { overflow: auto; padding: 12px; }
+.chat-message { margin-bottom: 10px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.chat-message strong { color: var(--ink); }
+.chat-message.system { color: var(--gold-2); font-style: italic; }
+#chatForm { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px; border-top: 1px solid rgba(255,255,255,.08); }
+#chatForm input { margin: 0; }
+
+.modal-card h2, .end-card h2 { margin: 5px 0; font-family: Georgia, serif; font-size: 34px; }
+.choice-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 20px 0; }
+.choice-grid button { min-height: 52px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); }
+.customize-card { width: min(760px, 95vw); max-height: 92vh; overflow: auto; padding: 24px; text-align: left; }
+.customize-layout { display: grid; grid-template-columns: minmax(190px, 260px) 1fr; gap: 24px; align-items: start; }
+.preview-wrap { display: grid; place-items: center; min-height: 300px; border-radius: 14px; background: radial-gradient(circle, rgba(240,201,75,.14), rgba(0,0,0,.18)); border: 1px solid rgba(255,255,255,.09); }
+#customPreview { width: 210px; height: 270px; }
+.custom-section { margin-bottom: 18px; }
+.custom-section h3 { margin: 0 0 9px; font-size: 12px; color: var(--gold-2); letter-spacing: .1em; text-transform: uppercase; }
+.swatch-grid { display: grid; grid-template-columns: repeat(6, 38px); gap: 9px; }
+.color-swatch { width: 38px; height: 38px; padding: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,.2); }
+.color-swatch.selected { outline: 3px solid var(--gold); outline-offset: 2px; }
+.custom-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.custom-option { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); }
+.custom-option.selected { color: #211b06; background: var(--gold); }
+.custom-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+.custom-actions .primary { width: auto; min-width: 145px; }
+.custom-hint { color: var(--muted); font-size: 12px; }
+
+
+.meeting-card { width: min(940px, 96vw); max-height: 90vh; overflow: auto; padding: 24px; }
+.meeting-heading { display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+.meeting-heading h2 { margin: 5px 0; font-family: Georgia, serif; font-size: clamp(24px, 4vw, 38px); }
+.meeting-timer { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--gold); color: var(--gold-2); font-size: 23px; font-weight: 900; }
+.meeting-player-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 18px; }
+.meeting-player { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; padding: 12px; background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; }
+.meeting-player.dead { opacity: .42; }
+.player-token { width: 34px; height: 34px; border-radius: 50%; border: 3px double rgba(255,255,255,.48); box-shadow: inset 0 -8px rgba(0,0,0,.18); }
+.player-actions { grid-column: 1 / -1; display: flex; gap: 6px; }
+.vote-button, .decree-button { flex: 1; padding: 7px; font-size: 11px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); }
+.vote-button.selected { color: #211b06; background: var(--gold); }
+.decree-button { color: #ffd8d8; border-color: rgba(213,82,82,.4); }
+.meeting-result { margin-top: 18px; padding: 18px; text-align: center; white-space: pre-line; border-radius: 12px; background: rgba(240,201,75,.09); border: 1px solid rgba(240,201,75,.26); font-size: 18px; line-height: 1.45; }
+.vote-summary { grid-column: 1 / -1; min-height: 30px; padding: 7px 9px; border-radius: 8px; background: rgba(0,0,0,.18); color: var(--muted); font-size: 11px; line-height: 1.35; }
+.vote-summary strong { color: var(--gold-2); }
+.abstain-card { border-color: rgba(240,201,75,.34); background: rgba(240,201,75,.07); }
+.abstain-token { display: grid; place-items: center; color: #211b06; background: var(--gold) !important; font-size: 19px; font-weight: 950; }
+
+.sewer-travel-overlay { position: absolute; z-index: 55; inset: 0; background: radial-gradient(circle at center, rgba(13,18,20,.18), rgba(2,5,7,.82)); }
+.sewer-arrow-layer { position: absolute; inset: 0; }
+.sewer-arrow { --angle: 0rad; position: absolute; width: 158px; min-height: 76px; transform: translate(-50%, -50%); display: grid; grid-template-rows: 34px auto; place-items: center; gap: 3px; padding: 8px 10px; color: var(--ink); background: rgba(12,26,28,.94); border: 1px solid rgba(109,210,190,.48); box-shadow: 0 15px 40px rgba(0,0,0,.42); }
+.sewer-arrow:hover { border-color: #9df0db; }
+.sewer-arrow-symbol { display: block; color: #9df0db; font-size: 31px; line-height: 1; transform: rotate(var(--angle)); filter: drop-shadow(0 0 8px rgba(109,210,190,.4)); }
+.sewer-arrow-label { font-size: 11px; line-height: 1.15; }
+.sewer-close { position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%); min-width: 130px; }
+.sewer-origin-label { position: absolute; left: 50%; top: calc(50% - 22px); transform: translate(-50%, -50%); padding: 8px 12px; border-radius: 999px; background: rgba(0,0,0,.72); border: 1px solid rgba(109,210,190,.3); color: #bff9eb; font-size: 12px; font-weight: 800; pointer-events: none; }
+
+.map-overlay { position: absolute; z-index: 32; inset: 0; display: grid; place-items: center; pointer-events: none; background: rgba(6,3,1,.52); }
+.map-card { width: min(900px, 92vw); padding: 18px; border: 10px solid #5c4226; border-radius: 8px; background: #c6ae76; box-shadow: 0 30px 70px rgba(0,0,0,.55); transform: rotate(-.5deg); }
+.map-title { color: #3d2b18; text-align: center; font-family: Georgia, serif; font-size: 24px; font-weight: 900; }
+#mapCanvas { display: block; width: 100%; height: auto; }
+
+.mobile-controls { position: absolute; z-index: 18; inset: auto 14px 14px; justify-content: space-between; align-items: end; pointer-events: none; }
+.mobile-controls button { pointer-events: auto; width: 54px; height: 54px; padding: 0; background: rgba(20,20,28,.75); border: 1px solid rgba(255,255,255,.16); }
+.dpad { display: grid; grid-template-columns: repeat(3, 54px); gap: 4px; }
+.dpad button:nth-child(1) { grid-column: 2; }
+.dpad button:nth-child(2) { grid-column: 1; grid-row: 2; }
+.dpad button:nth-child(3) { grid-column: 2; grid-row: 2; }
+.dpad button:nth-child(4) { grid-column: 3; grid-row: 2; }
+.action-pad { display: grid; grid-template-columns: repeat(2, 54px); gap: 8px; }
+
+@media (max-width: 760px) {
+  .hud { grid-template-columns: 1fr auto; font-size: 12px; }
+  .hud-cluster.center { display: none; }
+  .hud-cluster.right { justify-content: flex-end; }
+  #taskLabel, #hostLabel { display: none; }
+  .side-panel { top: 70px; width: 220px; padding: 12px; }
+  .side-panel h2 { font-size: 21px; }
+  .side-panel p { display: none; }
+  .lobby-panel, .task-panel { top: auto; right: 8px; bottom: 88px; width: 240px; max-height: 36vh; padding: 12px; }
+  .interaction-prompt { bottom: 158px; width: 82%; }
+  .mobile-controls.controls-open { display: flex !important; }
+  .chat-toggle { bottom: 92px; }
+  .choice-grid { grid-template-columns: 1fr; }
+  .customize-layout { grid-template-columns: 1fr; }
+  .preview-wrap { min-height: 230px; }
+  #customPreview { width: 170px; height: 210px; }
+  .swatch-grid { grid-template-columns: repeat(5, 38px); }
+  .join-actions { grid-template-columns: 1fr; }
+
+}
+
+  </style>
 </head>
 <body>
-<div id="hud"><div><b>Duel Stars Online</b></div><div>Status: <b id="statusText">Connecting</b></div><div>Health: <b id="health">100</b></div><div>Score: <b id="scoreText">0 - 0</b></div><div>Shards: <b id="shards">0</b></div><div class="tiny">WASD move · Mouse/trackpad look · Click attack · Right-click scope/special · E interact · Tab closes menus</div></div>
-<div id="msg"></div><div id="hint"></div><div id="crosshair"></div><div id="scopeOverlay"></div><div id="clickToLock">Click game to control camera</div>
-<div id="playerList"><b>Online Lobby</b><div id="playersOnline" class="tiny">Loading...</div></div>
-<div id="weaponBar"></div><button id="settingsBtn">Settings</button>
-<div id="settingsPanel" class="panel"><div class="row between"><div><h2>Duel Stars</h2><p>Weapons and player customization. Press Tab to close.</p></div><button class="btn danger" id="closeSettings">×</button></div><div class="tabs"><button class="tab on" data-tab="weapons">Weapons</button><button class="tab" data-tab="me">Me</button></div><div id="weaponsTab"></div><div id="meTab" style="display:none"></div></div>
-<div id="shopPanel" class="panel"><div class="row between"><div><h2>Shop Basket</h2><p>Buy locked weapons with shards.</p></div><button class="btn danger" id="closeShop">×</button></div><div id="shopItems"></div></div>
-<div id="loadoutPanel"><h1>Duel Stars Loadout</h1><p>Choose exactly one weapon from each category before the round starts.</p><div class="loadGrid" id="loadoutGrid"></div><button class="btn primary" id="readyBtn" style="font-size:20px;padding:14px 30px">Ready</button><p id="readyStatus">Waiting for players...</p></div>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-<script>
-const firebaseConfig={apiKey:"AIzaSyB3f3MdNWoKjjo54qAyt6As26rbL7LKavA",authDomain:"rivals-51d2c.firebaseapp.com",databaseURL:"https://rivals-51d2c-default-rtdb.firebaseio.com",projectId:"rivals-51d2c",storageBucket:"rivals-51d2c.firebasestorage.app",messagingSenderId:"458776303075",appId:"1:458776303075:web:3463aefd06ce14941afcd6"};
-firebase.initializeApp(firebaseConfig);const auth=firebase.auth();const db=firebase.database();
-let scene,camera,renderer,clock=new THREE.Clock();let uid=null,myRef=null,queueRef=null,currentMatchRef=null,currentMatch=null,matchId=null,mySide=null,remoteId=null,remoteSide=null;
-let yaw=0,pitch=0,keys={},mouseDown=false,isADS=false,canShoot=true,gameMode="lobby",roundPhase="lobby",menuOpen=false,shopOpen=false,ready=false,lastNet=0,lastHeartbeat=0,standingPad=null;
-let bullets=[],grenades=[],remotePlayers={},remoteMeshes={},nameSprites=[];
-const LOBBY_Z=46,ARENA_Z=0;
-const STARTS={blue:new THREE.Vector3(-8,1.7,12),red:new THREE.Vector3(8,1.7,-12)};
-let shards=Number(localStorage.getItem("duelStarsShards")||0);
-let playerName=localStorage.getItem("duelStarsName")||("Player"+Math.floor(Math.random()*999));
-let skinColor=localStorage.getItem("duelStarsSkin")||"#4fd3ff";
-let unlocked=JSON.parse(localStorage.getItem("duelStarsUnlocked")||"[true,true,true,true,false,false,false,false,false]");
-while(unlocked.length<9) unlocked.push(false);
-let loadout=JSON.parse(localStorage.getItem("duelStarsLoadout")||'{"primary":0,"secondary":1,"melee":2,"support":3}');
-let currentWeapon=loadout.primary;
-const weapons=[
-{name:"Assault Rifle",short:"AR",type:"primary",damage:16,cooldown:95,speed:95,spread:.018,pellets:1,head:1.6,scope:1.35},
-{name:"Handgun",short:"Handgun",type:"secondary",damage:32,cooldown:310,speed:86,spread:.014,pellets:1,head:1.7},
-{name:"Fists",short:"Fists",type:"melee",damage:22,cooldown:420,range:2.2,head:1},
-{name:"Grenade",short:"Grenade",type:"support",damage:55,cooldown:900,speed:22,explosion:5.2,head:1},
-{name:"Shotgun",short:"Shotgun",type:"secondary",damage:12,cooldown:650,speed:76,spread:.12,pellets:7,head:1.45,cost:3},
-{name:"Sniper",short:"Sniper",type:"primary",damage:86,cooldown:850,speed:140,spread:.004,pellets:1,head:999,scope:3.2,cost:5},
-{name:"SMG",short:"SMG",type:"primary",damage:10,cooldown:58,speed:86,spread:.036,pellets:1,head:1.45,cost:7},
-{name:"Knife",short:"Knife",type:"melee",damage:40,cooldown:430,range:2.4,backstab:999,cost:5,head:1},
-{name:"Medkit",short:"Medkit",type:"support",heal:50,cooldown:1800,cost:5,head:1}
+  <main id="app">
+    <canvas id="gameCanvas" aria-label="Traitor game"></canvas>
+
+    <section id="joinScreen" class="screen-overlay visible">
+      <div class="panel join-card">
+        <div class="crest">♜</div>
+        <h1>Traitor</h1>
+        <p>A ten-player castle mystery. Complete royal duties, expose the Chameleon, and survive.</p>
+        <label>
+          Display name
+          <input id="nameInput" maxlength="18" autocomplete="nickname" placeholder="TraitorGuest" />
+        </label>
+        <label>
+          Room code
+          <input id="roomInput" maxlength="12" value="TRAITOR" spellcheck="false" />
+        </label>
+        <button id="joinButton" class="primary" disabled>Connecting to Firebase…</button>
+        <div class="join-actions">
+          <button id="publicLobbyButton" class="secondary" disabled>Join public lobby</button>
+          <button id="createPrivateButton" class="secondary" disabled>Create private room</button>
+        </div>
+        <p id="joinStatus" class="status-text">Signing in anonymously.</p>
+        <p class="status-text">This single file can be opened directly. Internet access is still required for Firebase multiplayer.</p>
+      </div>
+    </section>
+
+    <header id="topHud" class="hud hidden">
+      <div class="hud-cluster">
+        <strong id="roomLabel">Room —</strong>
+        <span id="connectionLabel" class="pill">Connecting</span>
+        <span id="hostLabel" class="pill subtle"></span>
+      </div>
+      <div class="hud-cluster center">
+        <strong id="phaseLabel">LOBBY</strong>
+        <span id="timerLabel"></span>
+      </div>
+      <div class="hud-cluster right">
+        <span id="taskLabel">Royal duties: 0 / 0</span>
+        <button id="copyRoomButton" class="small-button">Copy room</button>
+      </div>
+    </header>
+
+    <aside id="rolePanel" class="panel side-panel hidden">
+      <div class="eyebrow">YOUR ROLE</div>
+      <h2 id="roleName">Unknown</h2>
+      <p id="roleDescription">Your role will appear when the match begins.</p>
+      <div id="roleAbilities" class="ability-list"></div>
+    </aside>
+
+    <aside id="lobbyPanel" class="panel lobby-panel hidden">
+      <h2>Yellow Starting Pad</h2>
+      <p id="padStatus">Walk onto the glowing pad.</p>
+      <div class="meter"><div id="padMeter"></div></div>
+      <button id="startVoteButton" class="primary" disabled>Stand on the pad to vote</button>
+      <p id="voteStatus" class="status-text"></p>
+      <button id="customizeButton" class="customize-button">Customize character (Tab)</button>
+      <div id="lobbyPlayers" class="mini-list"></div>
+    </aside>
+
+    <aside id="taskPanel" class="panel task-panel hidden">
+      <div class="eyebrow">ROYAL DUTIES</div>
+      <div id="taskList"></div>
+    </aside>
+
+    <div id="interactionPrompt" class="interaction-prompt hidden"></div>
+    <div id="toast" class="toast hidden"></div>
+
+    <button id="chatToggle" class="chat-toggle hidden" aria-label="Open chat">/</button>
+    <section id="chatPanel" class="panel chat-panel hidden">
+      <div class="chat-header">
+        <strong id="chatChannelLabel">Traitor Chat</strong>
+        <button id="closeChatButton" class="icon-button" aria-label="Close chat">×</button>
+      </div>
+      <div id="chatMessages" class="chat-messages"></div>
+      <form id="chatForm">
+        <input id="chatInput" maxlength="140" autocomplete="off" placeholder="Press / to chat…" />
+        <button class="small-button" type="submit">Send</button>
+      </form>
+    </section>
+
+    <section id="customizeOverlay" class="screen-overlay hidden">
+      <div class="panel customize-card">
+        <div class="meeting-heading">
+          <div>
+            <div class="eyebrow">CHARACTER WORKSHOP</div>
+            <h2>Customize Your Courtier</h2>
+          </div>
+          <button id="closeCustomizeButton" class="icon-button" aria-label="Close customization">×</button>
+        </div>
+        <div class="customize-layout">
+          <div class="preview-wrap"><canvas id="customPreview" width="260" height="320"></canvas></div>
+          <div>
+            <div class="custom-section">
+              <h3>Cloth color</h3>
+              <div id="colorChoices" class="swatch-grid"></div>
+            </div>
+            <div class="custom-section">
+              <h3>Outfit</h3>
+              <div id="outfitChoices" class="custom-options"></div>
+            </div>
+            <div class="custom-section">
+              <h3>Headwear</h3>
+              <div id="accessoryChoices" class="custom-options"></div>
+            </div>
+            <p class="custom-hint">Press Tab at any time outside a council meeting to reopen this workshop.</p>
+            <div class="custom-actions">
+              <button id="cancelCustomizeButton" class="secondary">Cancel</button>
+              <button id="saveCustomizeButton" class="primary">Save character</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sewerOverlay" class="sewer-travel-overlay hidden">
+      <div id="sewerOriginLabel" class="sewer-origin-label">Castle Sewers</div>
+      <div id="sewerDestinations" class="sewer-arrow-layer"></div>
+      <button id="closeSewerButton" class="secondary sewer-close">Cancel</button>
+    </section>
+
+    <section id="meetingOverlay" class="screen-overlay hidden">
+      <div class="panel meeting-card">
+        <div class="meeting-heading">
+          <div>
+            <div class="eyebrow">EMERGENCY COUNCIL</div>
+            <h2 id="meetingReason">The council has been called.</h2>
+          </div>
+          <div id="meetingTimer" class="meeting-timer">35</div>
+        </div>
+        <p id="meetingInstruction">Vote for the suspected Chameleon.</p>
+        <div id="meetingPlayers" class="meeting-player-grid"></div>
+        <div id="meetingResult" class="meeting-result hidden"></div>
+      </div>
+    </section>
+
+    <section id="mapOverlay" class="map-overlay hidden">
+      <div class="map-card">
+        <div class="map-title">Marauder's Map</div>
+        <canvas id="mapCanvas" width="1000" height="620"></canvas>
+      </div>
+    </section>
+
+    <section id="endOverlay" class="screen-overlay hidden">
+      <div class="panel end-card">
+        <div class="crest">♛</div>
+        <h2 id="endTitle">Victory</h2>
+        <p id="endText"></p>
+        <button id="returnLobbyButton" class="primary">Return to lobby</button>
+      </div>
+    </section>
+
+    <div id="mobileControls" class="mobile-controls hidden">
+      <div class="dpad">
+        <button data-key="arrowup">▲</button>
+        <button data-key="arrowleft">◀</button>
+        <button data-key="arrowdown">▼</button>
+        <button data-key="arrowright">▶</button>
+      </div>
+      <div class="action-pad">
+        <button id="mobileAbilityOne" title="Ability 1">E</button>
+        <button id="mobileAbilityTwo" title="Ability 2">R</button>
+        <button id="mobileInteract" title="Interact">F</button>
+        <button id="mobileReport" title="Leave match">Q</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Compat builds let this one-file game run when opened directly by double-clicking. -->
+  <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-database-compat.js"></script>
+  <script>
+const initializeApp = (config) => firebase.initializeApp(config);
+const getAuth = (app) => app.auth();
+const browserSessionPersistence = firebase.auth.Auth.Persistence.SESSION;
+const setPersistence = (auth, persistence) => auth.setPersistence(persistence);
+const signInAnonymously = (auth) => auth.signInAnonymously();
+const onAuthStateChanged = (auth, callback) => auth.onAuthStateChanged(callback);
+
+const getDatabase = (app) => app.database();
+const ref = (database, path = "") => database.ref(path || "/");
+const get = (reference) => reference.once("value");
+const set = (reference, value) => reference.set(value);
+const update = (reference, value) => reference.update(value);
+const remove = (reference) => reference.remove();
+const push = (reference, value) => value === undefined ? reference.push() : reference.push(value);
+const runTransaction = (reference, updater) => reference.transaction(updater);
+const serverTimestamp = () => firebase.database.ServerValue.TIMESTAMP;
+const onDisconnect = (reference) => reference.onDisconnect();
+const orderByChild = (child) => (reference) => reference.orderByChild(child);
+const limitToLast = (count) => (reference) => reference.limitToLast(count);
+const query = (reference, ...constraints) => constraints.reduce((current, apply) => apply(current), reference);
+const onValue = (reference, callback, errorCallback) => {
+  reference.on("value", callback, errorCallback);
+  return () => reference.off("value", callback);
+};
+
+// Firebase web configuration is intentionally present in client code. Protect the
+// project with Authentication, Realtime Database rules, quotas, and App Check.
+const firebaseConfig = {
+  apiKey: "AIzaSyAcSKnmK5vKDHuln_USSeN4vB0ZnVZaGwY",
+  authDomain: "location-new-f4609.firebaseapp.com",
+  databaseURL: "https://location-new-f4609-default-rtdb.firebaseio.com",
+  projectId: "location-new-f4609",
+  storageBucket: "location-new-f4609.firebasestorage.app",
+  messagingSenderId: "604916303315",
+  appId: "1:604916303315:web:d67baf2c67f5d59eb15b26",
+  measurementId: "G-LSJ701H7Z6",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+const $ = (id) => document.getElementById(id);
+const canvas = $("gameCanvas");
+const ctx = canvas.getContext("2d");
+const mapCanvas = $("mapCanvas");
+const mapCtx = mapCanvas.getContext("2d");
+
+const MAX_PLAYERS = 10;
+const PUBLIC_ROOM_ID = "TRAITOR";
+const TASK_GOAL = 75;
+const INITIAL_TASK_BATCH = 5;
+const ABSTAIN_VOTE = "__abstain__";
+const SEWER_TRAVEL_RANGE = 950;
+const MAP_SCALE = 1.45;
+const LOBBY_SIZE = { width: 1200, height: 700 };
+const WORLD_SIZE = { width: 1900 * MAP_SCALE, height: 1200 * MAP_SCALE };
+const LOBBY_PAD = { x: 480, y: 245, w: 240, h: 175 };
+const LEVER = { x: 950 * MAP_SCALE, y: 570 * MAP_SCALE, radius: 34 };
+const ROLE_DECK = [
+  "Peasant", "Peasant", "Peasant", "Peasant", "Peasant",
+  "Chameleon", "Mason", "King", "Advisor", "Chef",
 ];
-const player={pos:new THREE.Vector3(0,1.7,LOBBY_Z),vel:new THREE.Vector3(),health:100,grounded:false,radius:.55,height:1.7};
-const walls=[];let playBluePad,playRedPad,shopBasket,weaponView;
-const $=id=>document.getElementById(id);const msg=$('msg'),hint=$('hint');
-function saveLocal(){localStorage.setItem("duelStarsShards",shards);localStorage.setItem("duelStarsName",playerName);localStorage.setItem("duelStarsSkin",skinColor);localStorage.setItem("duelStarsUnlocked",JSON.stringify(unlocked));localStorage.setItem("duelStarsLoadout",JSON.stringify(loadout));}
-function setMessage(t,ms=1200){msg.textContent=t;if(ms)setTimeout(()=>{if(msg.textContent===t)msg.textContent=""},ms)}
-function init3D(){scene=new THREE.Scene();scene.background=new THREE.Color(0x0a1020);scene.fog=new THREE.Fog(0x0a1020,30,92);camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,1000);renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;document.body.appendChild(renderer.domElement);scene.add(new THREE.HemisphereLight(0xbbeeff,0x111122,1.2));const sun=new THREE.DirectionalLight(0xffffff,1.5);sun.position.set(8,14,10);sun.castShadow=true;scene.add(sun);makeArena();makeLobby();makeWeaponModel();selectWeapon(loadout.primary);animate();}
-function makeArena(){const floor=new THREE.Mesh(new THREE.BoxGeometry(36,1,36),new THREE.MeshStandardMaterial({color:0x20283d,roughness:.8}));floor.position.y=-.55;floor.receiveShadow=true;scene.add(floor);addWall(0,2,-18,36,4,1);addWall(0,2,18,36,4,1);addWall(-18,2,0,1,4,36);addWall(18,2,0,1,4,36);addWall(-7,1.5,-3,3,3,7);addWall(7,1.5,3,3,3,7);addWall(0,1.2,0,5,2.4,2);scene.add(new THREE.GridHelper(36,36,0x5577aa,0x22334f));}
-function makeLobby(){const z=LOBBY_Z;const floor=new THREE.Mesh(new THREE.BoxGeometry(28,1,28),new THREE.MeshStandardMaterial({color:0x20283d,roughness:.8}));floor.position.set(0,-.55,z);floor.receiveShadow=true;scene.add(floor);addWall(0,2,z-14,28,4,1);addWall(0,2,z+14,28,4,1);addWall(-14,2,z,1,4,28);addWall(14,2,z,1,4,28);let grid=new THREE.GridHelper(28,28,0x5577aa,0x22334f);grid.position.z=z;scene.add(grid);
- playBluePad=new THREE.Mesh(new THREE.BoxGeometry(4,0.18,4),new THREE.MeshStandardMaterial({color:0x178bff,emissive:0x001d44}));playBluePad.position.set(-4,0.08,z-7);scene.add(playBluePad);playRedPad=new THREE.Mesh(new THREE.BoxGeometry(4,0.18,4),new THREE.MeshStandardMaterial({color:0xff3030,emissive:0x330000}));playRedPad.position.set(4,0.08,z-7);scene.add(playRedPad);
- shopBasket=new THREE.Group();const base=new THREE.Mesh(new THREE.BoxGeometry(2.8,1.2,2),new THREE.MeshStandardMaterial({color:0xffaa33,roughness:.45}));base.position.y=.7;const rim=new THREE.Mesh(new THREE.TorusGeometry(1.25,.08,8,32),new THREE.MeshStandardMaterial({color:0xffdd77}));rim.rotation.x=Math.PI/2;rim.position.y=1.35;const handle=new THREE.Mesh(new THREE.TorusGeometry(.9,.06,8,32,Math.PI),new THREE.MeshStandardMaterial({color:0xffdd77}));handle.position.y=1.6;handle.rotation.z=Math.PI;shopBasket.add(base,rim,handle);shopBasket.position.set(0,0,z+6);scene.add(shopBasket);}
-function addWall(x,y,z,w,h,d){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:0x33415f,roughness:.7}));mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);walls.push({mesh,box:new THREE.Box3().setFromObject(mesh)});}
-function makeWeaponModel(){weaponView=new THREE.Group();camera.add(weaponView);scene.add(camera);rebuildWeaponModel();}
-function rebuildWeaponModel(){while(weaponView.children.length)weaponView.remove(weaponView.children[0]);const mat=new THREE.MeshStandardMaterial({color:0x151515,metalness:.25,roughness:.55});const accent=new THREE.MeshStandardMaterial({color:0x00e5ff,emissive:0x003344});const w=weapons[currentWeapon];
- if(w.type==='melee'){let geo=currentWeapon===7?new THREE.BoxGeometry(.08,.16,.75):new THREE.SphereGeometry(.17,16,16);let m=new THREE.Mesh(geo,currentWeapon===7?new THREE.MeshStandardMaterial({color:0xddeeff,metalness:.4,roughness:.25}):accent);m.position.set(.32,-.25,-.62);weaponView.add(m);return} if(currentWeapon===3){let g=new THREE.Mesh(new THREE.SphereGeometry(.18,16,16),new THREE.MeshStandardMaterial({color:0x55aa44}));g.position.set(.35,-.25,-.65);weaponView.add(g);return} if(currentWeapon===8){let box=new THREE.Mesh(new THREE.BoxGeometry(.34,.25,.26),new THREE.MeshStandardMaterial({color:0xffffff}));box.position.set(.35,-.25,-.65);let cross=new THREE.Mesh(new THREE.BoxGeometry(.08,.3,.02),new THREE.MeshStandardMaterial({color:0xff3333}));cross.position.set(.35,-.25,-.51);weaponView.add(box,cross);return}
- const length=[0,4,5].includes(currentWeapon)?.9:.5;const gun=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,length),mat);gun.position.set(.32,-.23,-.65);const barrel=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.35),mat);barrel.position.set(.32,-.21,-1.1);const glow=new THREE.Mesh(new THREE.BoxGeometry(.2,.06,.14),accent);glow.position.set(.32,-.12,-.5);weaponView.add(gun,barrel,glow);if(currentWeapon===0||currentWeapon===5){let scope=new THREE.Mesh(new THREE.CylinderGeometry(currentWeapon===5?.12:.09,currentWeapon===5?.12:.09,currentWeapon===5?.45:.26,18),mat);scope.rotation.x=Math.PI/2;scope.position.set(.32,currentWeapon===5?-.03:-.06,-.7);weaponView.add(scope)}}
-function makeNameSprite(name){const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,512,128);ctx.font='bold 48px Arial';ctx.textAlign='center';ctx.textBaseline='middle';const safe=(name||'Player').slice(0,18);const w=Math.min(470,ctx.measureText(safe).width+46);ctx.fillStyle='rgba(0,0,0,.62)';ctx.strokeStyle='rgba(140,247,255,.95)';ctx.lineWidth=4;roundRect(ctx,(512-w)/2,25,w,78,22);ctx.fill();ctx.stroke();ctx.fillStyle='white';ctx.fillText(safe,256,64);const tex=new THREE.CanvasTexture(canvas);tex.needsUpdate=true;const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));spr.scale.set(2.7,.68,1);spr.position.y=2.7;spr.userData.labelName=safe;return spr;}
-function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
-function makePlayerMesh(color,name){const group=new THREE.Group();const body=new THREE.Mesh(new THREE.CapsuleGeometry(.45,1.05,6,12),new THREE.MeshStandardMaterial({color:new THREE.Color(color||'#4fd3ff')}));body.position.y=1;body.castShadow=true;group.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.32,16,16),new THREE.MeshStandardMaterial({color:0xffc3aa}));head.position.y=1.9;head.castShadow=true;group.add(head);const gun=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.9),new THREE.MeshStandardMaterial({color:0x111111}));gun.position.set(.35,1.35,.25);group.add(gun);const label=makeNameSprite(name);group.add(label);group.userData.body=body;group.userData.label=label;group.userData.name=name||'Player';scene.add(group);return group;}
-function updateRemoteMeshes(){for(const id in remotePlayers){if(id===uid)continue;let p=remotePlayers[id];if(!remoteMeshes[id])remoteMeshes[id]=makePlayerMesh(p.color,p.name);let m=remoteMeshes[id];let visible=p.mode==='lobby'||p.matchId===matchId;m.visible=visible;let groundY=Math.max(0,(Number(p.y)||1.7)-1.7);let target=new THREE.Vector3(Number(p.x)||0,groundY,Number(p.z)||LOBBY_Z);m.position.lerp(target,.35);m.rotation.y=Number(p.yaw)||0;m.userData.body.material.color.set(p.color||'#4fd3ff');if((p.name||'Player')!==m.userData.name){m.remove(m.userData.label);m.userData.label.material.map.dispose();m.userData.label.material.dispose();m.userData.label=makeNameSprite(p.name);m.add(m.userData.label);m.userData.name=p.name||'Player';}if(m.userData.label){m.userData.label.visible=visible;m.userData.label.quaternion.copy(camera.quaternion);}}
- for(const id in remoteMeshes){if(!remotePlayers[id]){let m=remoteMeshes[id];if(m.userData.label){m.userData.label.material.map.dispose();m.userData.label.material.dispose();}scene.remove(m);delete remoteMeshes[id];}}
+const TASKER_ROLES = new Set(["Peasant", "Mason", "Advisor", "Chef"]);
+const SEWER_ROLES = new Set(["Mason", "Chameleon"]);
+const PLAYER_COLORS = [
+  "#c95656", "#4c86c6", "#65a76b", "#bd73bd", "#d79b45",
+  "#55aaa5", "#8e7bd6", "#cf6b97", "#8aa85b", "#b1a2d2",
+  "#b86f3d", "#6279a8",
+];
+const OUTFITS = ["tunic", "cloak", "armor"];
+const ACCESSORIES = ["none", "hood", "circlet", "plume"];
+const OUTFIT_LABELS = { tunic: "Tunic", cloak: "Cloak", armor: "Light armor" };
+const ACCESSORY_LABELS = { none: "None", hood: "Hood", circlet: "Circlet", plume: "Plume" };
+const BOT_WORDS_ONE = [
+  "apple", "amber", "brave", "cinder", "cloud", "crystal", "ember", "frost",
+  "gold", "hollow", "iron", "jade", "lunar", "misty", "night", "royal",
+  "scarlet", "shadow", "silver", "storm", "thorn", "velvet", "wild", "winter",
+];
+const BOT_WORDS_TWO = [
+  "banana", "badger", "castle", "crow", "dragon", "falcon", "fox", "goblin",
+  "griffin", "hawk", "keeper", "knight", "lantern", "lion", "mango", "otter",
+  "panda", "raven", "river", "shield", "sparrow", "tiger", "wolf", "wizard",
+];
+
+function botNameFor(id, index) {
+  const firstIndex = (hashNumber(id) + index * 7) % BOT_WORDS_ONE.length;
+  const secondIndex = (hashNumber(`${id}:second`) + index * 11) % BOT_WORDS_TWO.length;
+  return `PZ${BOT_WORDS_ONE[firstIndex]}${BOT_WORDS_TWO[secondIndex]}`;
 }
-function getRemoteOpponent(){if(!remoteId||!remotePlayers[remoteId])return null;return remotePlayers[remoteId];}
-function authStart(){auth.signInAnonymously().then(res=>{uid=res.user.uid;myRef=db.ref('duelStars/players/'+uid);myRef.onDisconnect().remove();myRef.set({name:playerName,color:skinColor,x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw,mode:'lobby',matchId:null,updated:firebase.database.ServerValue.TIMESTAMP});listenOnline();listenQueue();$('statusText').textContent='Lobby';}).catch(e=>setMessage('Firebase auth error: '+e.message,0));}
-function listenOnline(){db.ref('duelStars/players').on('value',snap=>{remotePlayers=snap.val()||{};let list=Object.entries(remotePlayers).filter(([id,p])=>p.mode==='lobby').map(([id,p])=>`<div>${p.name||'Player'} ${id===uid?'(you)':''}</div>`).join('')||'<div>No players</div>';$('playersOnline').innerHTML=list;updateRemoteMeshes();});}
-function listenQueue(){db.ref('duelStars/queue').on('value',snap=>{let q=snap.val()||{};if(uid&&q.blue&&q.red&&q.blue!==q.red){let blue=q.blue,red=q.red;if(uid===blue||uid===red){let id=[blue,red].sort().join('_');if(uid===blue)createMatchIfHost(id,blue,red);}}});}
-function createMatchIfHost(id,blue,red){if(uid!==blue)return;let ref=db.ref('duelStars/matches/'+id);ref.transaction(cur=>cur||{blue,red,status:'select',round:1,scores:{blue:0,red:0},health:{blue:100,red:100},ready:{},loadouts:{},winner:null,created:firebase.database.ServerValue.TIMESTAMP}).then(()=>{db.ref('duelStars/queue').remove();db.ref('duelStars/players/'+blue).update({mode:'match',matchId:id,side:'blue'});db.ref('duelStars/players/'+red).update({mode:'match',matchId:id,side:'red'});});}
-function joinMatch(id,side){if(matchId===id)return;matchId=id;mySide=side;remoteSide=side==='blue'?'red':'blue';currentMatchRef=db.ref('duelStars/matches/'+id);currentMatchRef.on('value',snap=>{currentMatch=snap.val();handleMatchState();});remoteId=null;currentMatchRef.once('value').then(s=>{let m=s.val();remoteId=side==='blue'?m.red:m.blue;});gameMode='match';roundPhase='select';player.pos.copy(STARTS[side]);player.vel.set(0,0,0);player.health=100;showLoadout(true);}
-function leaveMatch(){if(currentMatchRef)currentMatchRef.off();currentMatchRef=null;currentMatch=null;matchId=null;mySide=null;remoteSide=null;remoteId=null;gameMode='lobby';roundPhase='lobby';player.pos.set(0,1.7,LOBBY_Z);player.health=100;showLoadout(false);if(uid)myRef.update({mode:'lobby',matchId:null,side:null});}
-function handleMatchState(){if(!currentMatch||!mySide)return;let s=currentMatch.status;$('scoreText').textContent=(currentMatch.scores?.blue||0)+' - '+(currentMatch.scores?.red||0);player.health=currentMatch.health?.[mySide]??100;if(s==='select'){roundPhase='select';showLoadout(true);$('readyStatus').textContent='Pick weapons and press Ready.'} if(s==='countdown'){roundPhase='countdown';showLoadout(false);setMessage('Round starting...',300)} if(s==='playing'){roundPhase='playing';showLoadout(false)} if(s==='finished'){showLoadout(false);let won=currentMatch.winner===mySide;setMessage(won?'MATCH WON +1 SHARD':'MATCH LOST',1800);if(won&&!currentMatch.paid?.[mySide]){shards++;saveLocal();currentMatchRef.child('paid/'+mySide).set(true)}setTimeout(leaveMatch,1800)} }
-function queueSide(side){if(!uid||gameMode!=='lobby')return;if(side==='blue')db.ref('duelStars/queue/blue').set(uid);else db.ref('duelStars/queue/red').set(uid);standingPad=side;setMessage('Queued on '+side+' pad. Waiting for opponent...',0)}
-function unqueue(){if(!uid)return;db.ref('duelStars/queue').once('value').then(s=>{let q=s.val()||{};if(q.blue===uid)db.ref('duelStars/queue/blue').remove();if(q.red===uid)db.ref('duelStars/queue/red').remove();});standingPad=null;if(msg.textContent.startsWith('Queued'))msg.textContent='';}
-function updatePlayer(dt){
-  const forward=new THREE.Vector3(Math.sin(yaw),0,-Math.cos(yaw));
-  const right=new THREE.Vector3(Math.cos(yaw),0,Math.sin(yaw));
-  const wish=new THREE.Vector3();
-  const controlsAllowed=!menuOpen&&!shopOpen&&roundPhase!=='select';
-  if(controlsAllowed){
-    if(keys.w)wish.add(forward);
-    if(keys.s)wish.sub(forward);
-    if(keys.d)wish.add(right);
-    if(keys.a)wish.sub(right);
+
+const ROOMS = [
+  { id: "kitchen", name: "Royal Kitchen", x: 110, y: 90, w: 430, h: 270 },
+  { id: "throne", name: "Throne Room", x: 750, y: 70, w: 400, h: 220 },
+  { id: "library", name: "Moonlit Library", x: 1360, y: 90, w: 430, h: 270 },
+  { id: "armory", name: "Armory", x: 110, y: 455, w: 430, h: 280 },
+  { id: "hall", name: "Great Hall", x: 700, y: 350, w: 500, h: 450 },
+  { id: "chapel", name: "Old Chapel", x: 1360, y: 455, w: 430, h: 280 },
+  { id: "dungeon", name: "Dungeon", x: 110, y: 850, w: 430, h: 260 },
+  { id: "alchemy", name: "Alchemy Chamber", x: 750, y: 855, w: 400, h: 260 },
+  { id: "courtyard", name: "Inner Courtyard", x: 1360, y: 850, w: 430, h: 260 },
+];
+
+const CORRIDORS = [
+  { x: 500, y: 170, w: 240, h: 110 },
+  { x: 1160, y: 170, w: 240, h: 110 },
+  { x: 890, y: 250, w: 120, h: 140 },
+  { x: 500, y: 540, w: 240, h: 110 },
+  { x: 1160, y: 540, w: 240, h: 110 },
+  { x: 500, y: 920, w: 290, h: 110 },
+  { x: 1110, y: 920, w: 290, h: 110 },
+  { x: 890, y: 760, w: 120, h: 135 },
+  { x: 250, y: 695, w: 140, h: 195 },
+  { x: 1510, y: 695, w: 140, h: 195 },
+];
+
+const TASKS = [
+  { id: "stoke_oven", name: "Stoke the royal oven", icon: "🔥", room: "kitchen", x: 205, y: 190 },
+  { id: "knead_bread", name: "Knead banquet bread", icon: "🥖", room: "kitchen", x: 430, y: 280 },
+  { id: "polish_crown", name: "Polish the crown", icon: "👑", room: "throne", x: 950, y: 155 },
+  { id: "align_banners", name: "Align the royal banners", icon: "⚑", room: "throne", x: 1080, y: 245 },
+  { id: "stack_scrolls", name: "Stack ancient scrolls", icon: "📜", room: "library", x: 1470, y: 180 },
+  { id: "decode_runes", name: "Decode the moon runes", icon: "✦", room: "library", x: 1690, y: 285 },
+  { id: "sharpen_swords", name: "Sharpen the guard swords", icon: "⚔", room: "armory", x: 215, y: 560 },
+  { id: "repair_shield", name: "Repair a cracked shield", icon: "🛡", room: "armory", x: 445, y: 655 },
+  { id: "set_banquet", name: "Set the banquet table", icon: "🍽", room: "hall", x: 835, y: 515 },
+  { id: "light_braziers", name: "Light the great braziers", icon: "🕯", room: "hall", x: 1085, y: 710 },
+  { id: "ring_bell", name: "Ring the chapel bell", icon: "🔔", room: "chapel", x: 1480, y: 555 },
+  { id: "restore_glass", name: "Restore the stained glass", icon: "◇", room: "chapel", x: 1685, y: 655 },
+  { id: "turn_winch", name: "Turn the dungeon winch", icon: "⚙", room: "dungeon", x: 215, y: 960 },
+  { id: "lock_cells", name: "Check the cell locks", icon: "🔒", room: "dungeon", x: 445, y: 1040 },
+  { id: "mix_tonic", name: "Mix a healing tonic", icon: "⚗", room: "alchemy", x: 845, y: 960 },
+  { id: "sort_herbs", name: "Sort the alchemist's herbs", icon: "🌿", room: "alchemy", x: 1060, y: 1050 },
+  { id: "draw_water", name: "Draw water from the well", icon: "🪣", room: "courtyard", x: 1480, y: 970 },
+  { id: "trim_hedges", name: "Trim the thorn hedges", icon: "✂", room: "courtyard", x: 1700, y: 1040 },
+];
+
+const SEWERS = [
+  { id: "kitchen_grate", room: "kitchen", name: "Kitchen grate", x: 490, y: 315 },
+  { id: "library_grate", room: "library", name: "Library grate", x: 1415, y: 315 },
+  { id: "armory_grate", room: "armory", name: "Armory grate", x: 490, y: 690 },
+  { id: "hall_grate", room: "hall", name: "Great Hall grate", x: 1115, y: 405 },
+  { id: "chapel_grate", room: "chapel", name: "Chapel grate", x: 1415, y: 690 },
+  { id: "dungeon_grate", room: "dungeon", name: "Dungeon grate", x: 490, y: 1060 },
+  { id: "alchemy_grate", room: "alchemy", name: "Alchemy grate", x: 800, y: 1070 },
+  { id: "courtyard_grate", room: "courtyard", name: "Courtyard grate", x: 1415, y: 1060 },
+];
+
+for (const room of ROOMS) {
+  room.x *= MAP_SCALE; room.y *= MAP_SCALE; room.w *= MAP_SCALE; room.h *= MAP_SCALE;
+}
+for (const corridor of CORRIDORS) {
+  corridor.x *= MAP_SCALE; corridor.y *= MAP_SCALE; corridor.w *= MAP_SCALE; corridor.h *= MAP_SCALE;
+}
+for (const task of TASKS) { task.x *= MAP_SCALE; task.y *= MAP_SCALE; }
+for (const sewer of SEWERS) { sewer.x *= MAP_SCALE; sewer.y *= MAP_SCALE; }
+
+function taskBaseId(assignmentId) {
+  return String(assignmentId || "").split("__")[0];
+}
+
+function taskDefinitionFor(assignmentId) {
+  const baseId = taskBaseId(assignmentId);
+  return TASKS.find((task) => task.id === baseId) || null;
+}
+
+function makeTaskAssignment(baseId, serial) {
+  return `${baseId}__${serial}`;
+}
+
+const ROLE_INFO = {
+  Peasant: {
+    description: "Complete royal duties and help the castle identify the Chameleon.",
+  },
+  Mason: {
+    description: "Complete duties. You alone among the loyal court may travel through castle sewers.",
+  },
+  Chameleon: {
+    description: "Eliminate the court without being exposed. Use sewers and vanish for five seconds.",
+  },
+  King: {
+    description: "You have no duties. During each council, issue a Royal Decree to stop one player from voting.",
+  },
+  Advisor: {
+    description: "Complete duties. Use the Marauder's Map to reveal every player's position for five seconds.",
+  },
+  Chef: {
+    description: "Complete duties. Once per match, revive one person killed by the Chameleon.",
+  },
+};
+
+const state = {
+  user: null,
+  uid: null,
+  roomId: null,
+  joined: false,
+  meta: null,
+  players: {},
+  bodies: {},
+  meeting: null,
+  startVotes: {},
+  secret: null,
+  allSecrets: {},
+  keys: {},
+  localPos: { x: 600, y: 560 },
+  lastMoveWrite: 0,
+  lastPadValue: null,
+  taskHold: { id: null, elapsed: 0 },
+  taskPending: false,
+  mapVisibleUntil: 0,
+  chatOpen: false,
+  chatUnsub: null,
+  chatChannelKey: "",
+  lastChatAt: 0,
+  decreeMode: false,
+  controlsVisible: false,
+  tasksVisible: false,
+  lastPhase: "join",
+  customDraft: null,
+  renderPositions: new Map(),
+  listeners: [],
+  hostSecretsUnsub: null,
+  hostTickBusy: false,
+  hostStarting: false,
+  finalizingMeeting: false,
+  botBrains: new Map(),
+  toastTimer: null,
+  camera: { x: 0, y: 0 },
+  viewport: { width: innerWidth, height: innerHeight, dpr: 1 },
+  lastFrame: performance.now(),
+  hudUpdateAt: 0,
+  connectionOkay: true,
+  lastBotChatAt: 0,
+};
+
+function roomPath(suffix = "") {
+  return `rooms/${state.roomId}${suffix ? `/${suffix}` : ""}`;
+}
+
+function secretPath(uid = state.uid) {
+  return `roomSecrets/${state.roomId}/${uid}`;
+}
+
+function sanitizeRoom(value) {
+  return (value || "TRAITOR")
+    .toUpperCase()
+    .replace(/[^A-Z0-9_-]/g, "")
+    .slice(0, 12) || "TRAITOR";
+}
+
+function sanitizeName(value) {
+  return (value || "TraitorGuest")
+    .replace(/[<>]/g, "")
+    .trim()
+    .slice(0, 18) || "TraitorGuest";
+}
+
+function safeStorageGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function safeStorageSet(key, value) {
+  try { localStorage.setItem(key, value); } catch {}
+}
+
+function hashNumber(text) {
+  let hash = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
   }
-  if(wish.length()>0)wish.normalize();
-  const sprint=keys.shift&&!isADS?1.55:1;
-  const maxSpeed=7.2*sprint*(isADS?.55:1);
-  const accel=player.grounded?42:14;
-  player.vel.x+=wish.x*accel*dt;
-  player.vel.z+=wish.z*accel*dt;
-  const horizontal=new THREE.Vector3(player.vel.x,0,player.vel.z);
-  if(horizontal.length()>maxSpeed){horizontal.setLength(maxSpeed);player.vel.x=horizontal.x;player.vel.z=horizontal.z;}
-  if(keys[' ']&&player.grounded&&!isADS&&controlsAllowed){player.vel.y=8.4;player.grounded=false;}
-  player.vel.y-=22*dt;
-  if(player.grounded&&wish.length()===0){player.vel.x*=Math.pow(.0008,dt);player.vel.z*=Math.pow(.0008,dt);}
-  const old=player.pos.clone();
-  player.pos.addScaledVector(player.vel,dt);
-  if(player.pos.y<=player.height){player.pos.y=player.height;player.vel.y=0;player.grounded=true;}
-  if(collides(player.pos)){player.pos.copy(old);player.vel.x*=-.1;player.vel.z*=-.1;}
-  camera.position.copy(player.pos);
-  camera.rotation.set(pitch,yaw,0,'YXZ');
-  camera.fov+=(targetFov()-camera.fov)*Math.min(1,dt*12);
-  camera.updateProjectionMatrix();
-  const targetWeaponZ=isADS?-.18:0;
-  weaponView.position.z+=(targetWeaponZ-weaponView.position.z)*Math.min(1,dt*10);
+  return Math.abs(hash >>> 0);
 }
-function collides(pos){const box=new THREE.Box3(new THREE.Vector3(pos.x-player.radius,0,pos.z-player.radius),new THREE.Vector3(pos.x+player.radius,player.height,pos.z+player.radius));return walls.some(w=>w.box.intersectsBox(box));}
-function getLookDirection(){return new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(pitch,yaw,0,'YXZ')).normalize();}
-function attack(){if(menuOpen||shopOpen||roundPhase==='select')return;if(gameMode!=='match'||roundPhase!=='playing')return;if(!canShoot)return;let w=weapons[currentWeapon];canShoot=false;setTimeout(()=>canShoot=true,w.cooldown||500);if(currentWeapon===8){healSelf();return}if(currentWeapon===3){throwGrenade();return}if(w.type==='melee'){meleeAttack(false);return}for(let i=0;i<w.pellets;i++){let dir=getLookDirection();let spread=isADS&&w.scope?w.spread*.22:w.spread;dir.x+=(Math.random()-.5)*spread;dir.y+=(Math.random()-.5)*spread;dir.z+=(Math.random()-.5)*spread;dir.normalize();bullets.push({pos:player.pos.clone().add(dir.clone().multiplyScalar(.8)),vel:dir.clone().multiplyScalar(w.speed),damage:w.damage,life:1.15,mesh:makeBullet(0x8cf7ff),weapon:currentWeapon});}}
-function rightSpecial(){let w=weapons[currentWeapon];if(currentWeapon===7&&gameMode==='match'&&roundPhase==='playing'&&canShoot){canShoot=false;setTimeout(()=>canShoot=true,w.cooldown);meleeAttack(true);return}if(w.scope){isADS=true;$('scopeOverlay').style.display=currentWeapon===5?'block':'none'}}
-function stopADS(){isADS=false;$('scopeOverlay').style.display='none'}
-function makeBullet(color){let m=new THREE.Mesh(new THREE.SphereGeometry(.07,8,8),new THREE.MeshBasicMaterial({color}));scene.add(m);return m;}
-function updateProjectiles(dt){for(const b of bullets){b.life-=dt;b.pos.addScaledVector(b.vel,dt);b.mesh.position.copy(b.pos);if(bulletHitsWall(b.pos))b.dead=true;let hit=checkHitOpponent(b.pos,b.weapon);if(hit){applyDamage(hit.damage,hit.head);b.dead=true}if(b.life<=0)b.dead=true}for(let i=bullets.length-1;i>=0;i--){if(bullets[i].dead){scene.remove(bullets[i].mesh);bullets.splice(i,1)}}for(const g of grenades){g.timer-=dt;g.vel.y-=18*dt;g.pos.addScaledVector(g.vel,dt);if(g.pos.y<.22){g.pos.y=.22;g.vel.y*=-.45;g.vel.x*=.75;g.vel.z*=.75}g.mesh.position.copy(g.pos);if(g.timer<=0){explode(g.pos);g.dead=true}}grenades=grenades.filter(g=>{if(g.dead)scene.remove(g.mesh);return !g.dead});}
-function bulletHitsWall(pos){const pb=new THREE.Box3(new THREE.Vector3(pos.x-.06,pos.y-.06,pos.z-.06),new THREE.Vector3(pos.x+.06,pos.y+.06,pos.z+.06));return walls.some(w=>w.box.intersectsBox(pb));}
-function checkHitOpponent(pos,wi){let op=getRemoteOpponent();if(!op)return null;let opPos=new THREE.Vector3(op.x||0,op.y||1.7,op.z||0);let headCenter=opPos.clone().add(new THREE.Vector3(0,.2,0));let bodyCenter=opPos.clone().add(new THREE.Vector3(0,-.75,0));let w=weapons[wi];if(pos.distanceTo(headCenter)<.38){return{damage:wi===5?999:Math.round(w.damage*(w.head||1.5)),head:true}}if(pos.distanceTo(bodyCenter)<.82){return{damage:w.damage,head:false}}return null}
-function meleeAttack(backstab){let op=getRemoteOpponent();if(!op)return;let opPos=new THREE.Vector3(op.x||0,op.y||1.7,op.z||0);let dist=player.pos.distanceTo(opPos);let w=weapons[currentWeapon];if(dist>(w.range||2.2))return;let dirToOpp=opPos.clone().sub(player.pos).normalize();let aim=getLookDirection();if(aim.dot(dirToOpp)<.55)return;let dmg=w.damage;if(backstab&&currentWeapon===7){let oppForward=new THREE.Vector3(Math.sin(op.yaw||0),0,-Math.cos(op.yaw||0));let fromOpp=player.pos.clone().sub(opPos).setY(0).normalize();let behind=oppForward.dot(fromOpp)<-.35;dmg=behind?999:40;setMessage(behind?'BACKSTAB!':'Knife hit',700)}applyDamage(dmg,false)}
-function healSelf(){let newH=Math.min(100,player.health+50);if(currentMatchRef)currentMatchRef.child('health/'+mySide).set(newH);setMessage('Medkit +50 HP',700)}
-function applyDamage(amount,head){if(!currentMatchRef||!remoteSide||roundPhase!=='playing')return;if(head)setMessage('HEADSHOT',450);let href=currentMatchRef.child('health/'+remoteSide);href.transaction(h=>Math.max(0,(h??100)-amount)).then(res=>{let h=res.snapshot.val();if(h<=0)finishRound(mySide);});}
-function finishRound(winnerSide){if(!currentMatchRef)return;currentMatchRef.transaction(m=>{if(!m||m.status!=='playing')return m;m.scores=m.scores||{blue:0,red:0};m.scores[winnerSide]=(m.scores[winnerSide]||0)+1;if(m.scores[winnerSide]>=5){m.status='finished';m.winner=winnerSide}else{m.status='select';m.round=(m.round||1)+1;m.health={blue:100,red:100};m.ready={};m.loadouts={}}return m;});}
-function throwGrenade(){let dir=getLookDirection();let mesh=new THREE.Mesh(new THREE.SphereGeometry(.18,16,16),new THREE.MeshStandardMaterial({color:0x55aa44}));scene.add(mesh);grenades.push({pos:player.pos.clone().add(dir.clone().multiplyScalar(.8)),vel:dir.multiplyScalar(22).add(new THREE.Vector3(0,5,0)),timer:1.6,mesh});}
-function explode(pos){let boom=new THREE.Mesh(new THREE.SphereGeometry(1,20,20),new THREE.MeshBasicMaterial({color:0xffaa00,transparent:true,opacity:.7}));boom.position.copy(pos);scene.add(boom);let s=0;let iv=setInterval(()=>{s+=.35;boom.scale.set(s,s,s);boom.material.opacity-=.08;if(boom.material.opacity<=0){clearInterval(iv);scene.remove(boom)}},25);let op=getRemoteOpponent();if(op&&pos.distanceTo(new THREE.Vector3(op.x||0,op.y||1.7,op.z||0))<weapons[3].explosion)applyDamage(weapons[3].damage,false);if(pos.distanceTo(player.pos)<weapons[3].explosion){let nh=Math.max(0,player.health-28);currentMatchRef.child('health/'+mySide).set(nh);if(nh<=0)finishRound(remoteSide)}}
-function selectWeapon(i){if(!weapons[i]||!unlocked[i])return;let allowed=Object.values(loadout).includes(i);if(gameMode==='match'&&!allowed)return;currentWeapon=i;rebuildWeaponModel();renderWeaponBar();}
-function renderWeaponBar(){let ids=gameMode==='match'?Object.values(loadout):[loadout.primary,loadout.secondary,loadout.melee,loadout.support];$('weaponBar').innerHTML=ids.map((id,idx)=>`<div class="slot ${id===currentWeapon?'active':''}">${idx+1} ${weapons[id].short}<small>${weapons[id].type}</small></div>`).join('');}
-function renderSettings(){let tabW=$('weaponsTab');let byType={primary:[],secondary:[],melee:[],support:[]};weapons.forEach((w,i)=>byType[w.type].push([w,i]));tabW.innerHTML=Object.entries(byType).map(([type,arr])=>`<div class="card"><h3>${type.toUpperCase()}</h3><p>You can equip only one ${type} at a time.</p><div class="weaponGrid">${arr.map(([w,i])=>`<div class="weaponCard ${!unlocked[i]?'locked':''} ${loadout[type]===i?'equipped':''}"><b>${w.name}</b><small>${unlocked[i]?'Owned':'Locked'} ${w.cost?'· '+w.cost+' shards':''}</small><span class="pill">${type}</span><br>${unlocked[i]?`<button onclick="equipWeapon(${i})">Equip</button>`:`<button onclick="openShop()">Shop</button>`}</div>`).join('')}</div></div>`).join('');
- $('meTab').innerHTML=`<div class="card"><h3>Me</h3><p>Other players see this in the online lobby.</p><label>Display name</label><input id="nameInput" value="${playerName.replace(/"/g,'&quot;')}"><button class="btn primary" onclick="saveName()">Save Name</button></div><div class="card"><h3>Skin Color</h3><div class="colorPick">${['#4fd3ff','#ff4b4b','#66ff99','#ffe66d','#b46cff','#ff8c33','#ffffff','#111111'].map(c=>`<div class="colorSwatch ${skinColor===c?'sel':''}" style="background:${c}" onclick="setSkin('${c}')"></div>`).join('')}</div></div>`;}
-window.equipWeapon=function(i){let t=weapons[i].type;if(!unlocked[i])return;loadout[t]=i;saveLocal();renderSettings();renderWeaponBar();setMessage('Equipped '+weapons[i].name,650)};window.saveName=function(){playerName=$('nameInput').value.trim().slice(0,18)||'Player';saveLocal();if(myRef)myRef.update({name:playerName});renderSettings()};window.setSkin=function(c){skinColor=c;saveLocal();if(myRef)myRef.update({color:skinColor});renderSettings()};
-function openSettings(){menuOpen=true;shopOpen=false;$('settingsPanel').style.display='block';$('shopPanel').style.display='none';renderSettings();document.exitPointerLock?.()}function closeSettings(){menuOpen=false;$('settingsPanel').style.display='none'}function openShop(){shopOpen=true;menuOpen=false;$('shopPanel').style.display='block';$('settingsPanel').style.display='none';renderShop();document.exitPointerLock?.()}function closeShop(){shopOpen=false;$('shopPanel').style.display='none'}
-function renderShop(){let items=weapons.map((w,i)=>w.cost&&!unlocked[i]?`<div class="card"><div class="row between"><div><b>${w.name}</b><p>${w.type} · ${w.cost} shards</p></div><button class="btn primary" onclick="buyWeapon(${i})">Buy</button></div></div>`:'').join('');$('shopItems').innerHTML=items||'<div class="card"><b>Everything owned</b><p>All shop weapons are already in your inventory.</p></div>';}
-window.buyWeapon=function(i){let w=weapons[i];if(unlocked[i])return setMessage('Already owned',700);if(shards<w.cost)return setMessage('Need '+w.cost+' shards',900);shards-=w.cost;unlocked[i]=true;saveLocal();$('shards').textContent=shards;renderShop();renderSettings();setMessage('Bought '+w.name,900)};
-function showLoadout(show){$('loadoutPanel').style.display=show?'block':'none';if(show){ready=false;renderLoadout();document.exitPointerLock?.()}}
-function renderLoadout(){let types=['primary','secondary','melee','support'];$('loadoutGrid').innerHTML=types.map(t=>`<div class="loadCol"><h3>${t.toUpperCase()}</h3>${weapons.map((w,i)=>w.type===t?`<button class="loadOpt ${loadout[t]===i?'sel':''} ${!unlocked[i]?'locked':''}" ${!unlocked[i]?'disabled':''} onclick="pickLoadout('${t}',${i})">${w.name}${!unlocked[i]?' 🔒':''}</button>`:'').join('')}</div>`).join('')}
-window.pickLoadout=function(t,i){if(!unlocked[i])return;loadout[t]=i;saveLocal();renderLoadout();renderWeaponBar()};
-function readyUp(){if(!currentMatchRef||!mySide)return;ready=true;currentMatchRef.child('loadouts/'+mySide).set(loadout);currentMatchRef.child('ready/'+mySide).set(true);$('readyStatus').textContent='Ready! Waiting for opponent...';currentMatchRef.once('value').then(s=>{let m=s.val();if(m?.ready?.blue&&m?.ready?.red){currentMatchRef.update({status:'countdown',health:{blue:100,red:100}});setTimeout(()=>currentMatchRef.child('status').set('playing'),1400)}})}
-function interact(){if(gameMode==='lobby'){let dBlue=player.pos.distanceTo(playBluePad.position),dRed=player.pos.distanceTo(playRedPad.position),dShop=player.pos.distanceTo(shopBasket.position);if(dShop<4){openShop();return}if(dBlue<3.5){queueSide('blue');return}if(dRed<3.5){queueSide('red');return}}}
-function updateLobbyHint(){hint.textContent='';if(gameMode!=='lobby')return;if(player.pos.distanceTo(shopBasket.position)<4)hint.textContent='Press E to open shop basket';else if(player.pos.distanceTo(playBluePad.position)<3.5)hint.textContent='Press E to queue on BLUE pad';else if(player.pos.distanceTo(playRedPad.position)<3.5)hint.textContent='Press E to queue on RED pad';}
-function networkTick(t){if(!uid||!myRef)return;if(t-lastNet>50){lastNet=t;let data={name:playerName,color:skinColor,x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw,weapon:currentWeapon,mode:gameMode,matchId:matchId||null,side:mySide||null,updated:firebase.database.ServerValue.TIMESTAMP};myRef.update(data)}if(t-lastHeartbeat>1000){lastHeartbeat=t;if(gameMode==='lobby')unqueueIfLeftPads();}}
-function unqueueIfLeftPads(){if(!standingPad)return;let pad=standingPad==='blue'?playBluePad:playRedPad;if(player.pos.distanceTo(pad.position)>4.2){unqueue();}}
-function updateHud(){if(uid&&remotePlayers[uid]?.matchId&&!matchId)joinMatch(remotePlayers[uid].matchId,remotePlayers[uid].side);$('statusText').textContent=gameMode==='lobby'?'Lobby':('1v1 '+(roundPhase||''));$('health').textContent=Math.max(0,Math.round(player.health));$('scoreText').textContent=currentMatch?((currentMatch.scores?.blue||0)+' - '+(currentMatch.scores?.red||0)):'0 - 0';$('shards').textContent=shards;$('settingsBtn').style.display=gameMode==='lobby'?'block':'none';$('playerList').style.display=gameMode==='lobby'?'block':'none';$('crosshair').style.display=(gameMode==='match'&&roundPhase==='playing')?'block':'none';renderWeaponBar();}
-function animate(t=0){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.033);updatePlayer(dt);if(gameMode==='lobby')updateLobbyHint();else{hint.textContent=roundPhase==='playing'?'First to 5 wins':'Choose your loadout'}updateProjectiles(dt);updateRemoteMeshes();networkTick(t);updateHud();renderer.render(scene,camera)}
-window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-function keyName(e){if(e.code==='KeyW')return 'w';if(e.code==='KeyA')return 'a';if(e.code==='KeyS')return 's';if(e.code==='KeyD')return 'd';if(e.code==='Space')return ' ';if(e.code==='ShiftLeft'||e.code==='ShiftRight')return 'shift';return e.key.toLowerCase();}
-document.addEventListener('mousemove',e=>{if(document.pointerLockElement!==document.body)return;yaw-=e.movementX*.0022;pitch-=e.movementY*.0022;pitch=Math.max(-1.35,Math.min(1.35,pitch));});
-document.addEventListener('keydown',e=>{let k=keyName(e);if(['w','a','s','d',' ','shift','e','tab','1','2','3','4'].includes(k))e.preventDefault();keys[k]=true;if(k==='tab'){closeSettings();closeShop();if(roundPhase!=='select')showLoadout(false)}if(k==='e')interact();if(['1','2','3','4'].includes(k)){let ids=Object.values(loadout);selectWeapon(ids[Number(k)-1])}});
-document.addEventListener('keyup',e=>{keys[keyName(e)]=false});
-document.addEventListener('mousedown',e=>{if(menuOpen||shopOpen||roundPhase==='select')return;if(document.pointerLockElement!==document.body)document.body.requestPointerLock();if(e.button===0)attack();if(e.button===2)rightSpecial();});
-document.addEventListener('mouseup',e=>{if(e.button===2)stopADS()});
-document.addEventListener('contextmenu',e=>e.preventDefault());
-window.addEventListener('blur',()=>{keys={};stopADS();});
-document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==document.body){keys={};stopADS();}$('clickToLock').style.display=document.pointerLockElement===document.body?'none':'block'});
-$('settingsBtn').onclick=openSettings;$('closeSettings').onclick=closeSettings;$('closeShop').onclick=closeShop;$('readyBtn').onclick=readyUp;document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('weaponsTab').style.display=b.dataset.tab==='weapons'?'block':'none';$('meTab').style.display=b.dataset.tab==='me'?'block':'none';});
-init3D();renderSettings();renderShop();authStart();
-</script>
+
+function colorForId(id) {
+  return PLAYER_COLORS[hashNumber(id) % PLAYER_COLORS.length];
+}
+
+function defaultCustomization(id = state.uid || "guest") {
+  return {
+    color: colorForId(id),
+    outfit: OUTFITS[hashNumber(`${id}:outfit`) % OUTFITS.length],
+    accessory: ACCESSORIES[hashNumber(`${id}:accessory`) % ACCESSORIES.length],
+  };
+}
+
+function normalizeCustomization(value = {}, id = state.uid || "guest") {
+  const fallback = defaultCustomization(id);
+  return {
+    color: PLAYER_COLORS.includes(value.color) ? value.color : fallback.color,
+    outfit: OUTFITS.includes(value.outfit) ? value.outfit : fallback.outfit,
+    accessory: ACCESSORIES.includes(value.accessory) ? value.accessory : fallback.accessory,
+  };
+}
+
+function randomPrivateRoomCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint32Array(6);
+  crypto.getRandomValues(bytes);
+  return `PZ${Array.from(bytes, (value) => alphabet[value % alphabet.length]).join("")}`;
+}
+
+function randomId(prefix = "id") {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function shuffle(items) {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const j = array[0] % (i + 1);
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function pointInRect(x, y, rect, padding = 0) {
+  return x >= rect.x + padding && x <= rect.x + rect.w - padding
+    && y >= rect.y + padding && y <= rect.y + rect.h - padding;
+}
+
+function isWalkable(x, y) {
+  return ROOMS.some((room) => pointInRect(x, y, room, 18))
+    || CORRIDORS.some((corridor) => pointInRect(x, y, corridor, 4));
+}
+
+function getMyPlayer() {
+  return state.players[state.uid] || null;
+}
+
+function isHost() {
+  return Boolean(state.uid && state.meta?.hostId === state.uid);
+}
+
+function currentPhase() {
+  return state.meta?.state || "lobby";
+}
+
+function activePlayers() {
+  return Object.entries(state.players)
+    .filter(([, player]) => player?.inMatch)
+    .map(([id, player]) => ({ id, ...player }));
+}
+
+function alivePlayers() {
+  return activePlayers().filter((player) => player.alive);
+}
+
+function realLobbyPlayers() {
+  return Object.entries(state.players)
+    .filter(([, player]) => player && !player.isBot && player.connected)
+    .map(([id, player]) => ({ id, ...player }));
+}
+
+function showToast(message, ms = 2200) {
+  const element = $("toast");
+  element.textContent = message;
+  element.classList.remove("hidden");
+  clearTimeout(state.toastTimer);
+  state.toastTimer = setTimeout(() => element.classList.add("hidden"), ms);
+}
+
+function setVisible(id, visible) {
+  $(id).classList.toggle("hidden", !visible);
+}
+
+function resizeCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  canvas.width = Math.floor(width * dpr);
+  canvas.height = Math.floor(height * dpr);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  state.viewport = { width, height, dpr };
+}
+
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+onAuthStateChanged(auth, (user) => {
+  state.user = user;
+  state.uid = user?.uid || null;
+  if (user) {
+    $("joinButton").disabled = false;
+    $("publicLobbyButton").disabled = false;
+    $("createPrivateButton").disabled = false;
+    $("joinButton").textContent = "Join room";
+    $("joinStatus").textContent = "Anonymous sign-in is ready.";
+    const remembered = safeStorageGet("traitorPlayerName");
+    if (remembered) $("nameInput").value = remembered;
+    const urlRoom = new URLSearchParams(location.search).get("room");
+    if (urlRoom) $("roomInput").value = sanitizeRoom(urlRoom);
+  }
+});
+
+setPersistence(auth, browserSessionPersistence)
+  .then(() => auth.currentUser || signInAnonymously(auth))
+  .catch((error) => {
+    $("joinStatus").textContent = `Firebase sign-in failed: ${error.message}`;
+    $("joinButton").textContent = "Firebase connection failed";
+  });
+
+$("joinButton").addEventListener("click", joinRoom);
+$("publicLobbyButton").addEventListener("click", () => {
+  $("roomInput").value = PUBLIC_ROOM_ID;
+  joinRoom();
+});
+$("createPrivateButton").addEventListener("click", () => {
+  $("roomInput").value = randomPrivateRoomCode();
+  joinRoom();
+});
+$("nameInput").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") joinRoom();
+});
+$("roomInput").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") joinRoom();
+});
+
+async function joinRoom() {
+  if (!state.uid || state.joined) return;
+  const name = sanitizeName($("nameInput").value);
+  const roomId = sanitizeRoom($("roomInput").value);
+  state.roomId = roomId;
+  safeStorageSet("traitorPlayerName", name);
+  $("joinButton").disabled = true;
+  $("joinStatus").textContent = "Opening the castle gates…";
+
+  try {
+    const hostRef = ref(db, roomPath("meta/hostId"));
+    await runTransaction(hostRef, (current) => current || state.uid);
+
+    const metaSnapshot = await get(ref(db, roomPath("meta")));
+    const meta = metaSnapshot.val() || {};
+    const metaUpdates = {
+      maxPlayers: MAX_PLAYERS,
+      state: meta.state || "lobby",
+      createdAt: meta.createdAt || Date.now(),
+      updatedAt: serverTimestamp(),
+    };
+    await update(ref(db, roomPath("meta")), metaUpdates);
+
+    const playerRef = ref(db, roomPath(`players/${state.uid}`));
+    const existing = (await get(playerRef)).val();
+    let rememberedCustomization = null;
+    try { rememberedCustomization = JSON.parse(safeStorageGet("traitorCustomization") || "null"); } catch {}
+    const customization = normalizeCustomization(existing || rememberedCustomization || {}, state.uid);
+    const base = existing || {
+      x: 600 + Math.random() * 70 - 35,
+      y: 560 + Math.random() * 70 - 35,
+      alive: true,
+      inMatch: false,
+      spectator: false,
+      onPad: false,
+      completedTasks: {},
+      isBot: false,
+    };
+    await update(playerRef, {
+      ...base,
+      ...customization,
+      name,
+      isBot: false,
+      connected: true,
+      lastSeen: serverTimestamp(),
+    });
+    await onDisconnect(playerRef).update({
+      connected: false,
+      onPad: false,
+      lastSeen: serverTimestamp(),
+    });
+
+    state.localPos = { x: base.x || 600, y: base.y || 560 };
+    state.joined = true;
+    if (location.protocol !== "file:") {
+      try { history.replaceState({}, "", `${location.pathname || "/"}?room=${encodeURIComponent(roomId)}`); } catch {}
+    }
+    beginRoomListeners();
+
+    $("joinScreen").classList.remove("visible");
+    $("joinScreen").classList.add("hidden");
+    setVisible("topHud", true);
+    setVisible("chatToggle", true);
+    showToast(`Entered room ${roomId}`);
+  } catch (error) {
+    console.error(error);
+    $("joinStatus").textContent = `Could not join: ${error.message}`;
+    $("joinButton").disabled = false;
+  }
+}
+
+function clearListeners() {
+  for (const unsubscribe of state.listeners) unsubscribe?.();
+  state.listeners = [];
+  state.chatUnsub?.();
+  state.chatUnsub = null;
+  state.chatChannelKey = "";
+  state.hostSecretsUnsub?.();
+  state.hostSecretsUnsub = null;
+}
+
+function beginRoomListeners() {
+  clearListeners();
+
+  state.listeners.push(onValue(ref(db, roomPath("meta")), (snapshot) => {
+    state.meta = snapshot.val() || { state: "lobby" };
+    handleMetaChange();
+    maybeClaimHost();
+    maybeAttachHostSecrets();
+    maybeHostActions();
+  }));
+
+  state.listeners.push(onValue(ref(db, roomPath("players")), (snapshot) => {
+    const previousOwn = getMyPlayer();
+    state.players = snapshot.val() || {};
+    for (const [id, player] of Object.entries(state.players)) {
+      if (id === state.uid || !Number.isFinite(player?.x) || !Number.isFinite(player?.y)) continue;
+      const render = state.renderPositions.get(id) || { x: player.x, y: player.y, targetX: player.x, targetY: player.y };
+      const gap = Math.hypot(render.x - player.x, render.y - player.y);
+      render.targetX = player.x;
+      render.targetY = player.y;
+      if (gap > 360) { render.x = player.x; render.y = player.y; }
+      state.renderPositions.set(id, render);
+    }
+    for (const id of [...state.renderPositions.keys()]) {
+      if (!state.players[id]) state.renderPositions.delete(id);
+    }
+    const own = getMyPlayer();
+    if (own) {
+      const localDifference = Math.hypot((own.x || 0) - state.localPos.x, (own.y || 0) - state.localPos.y);
+      const moving = Object.values(state.keys).some(Boolean);
+      if (!previousOwn || (!moving && localDifference > 8) || localDifference > 180) {
+        state.localPos = { x: own.x || 600, y: own.y || 560 };
+      }
+    }
+    renderLobbyPanel();
+    renderMeetingPlayers();
+    maybeClaimHost();
+    maybeHostActions();
+  }));
+
+  state.listeners.push(onValue(ref(db, roomPath("bodies")), (snapshot) => {
+    state.bodies = snapshot.val() || {};
+  }));
+
+  state.listeners.push(onValue(ref(db, roomPath("meeting")), (snapshot) => {
+    state.meeting = snapshot.val() || null;
+    renderMeetingPlayers();
+    if (state.meeting && currentPhase() === "meeting") openChat(true);
+    maybeHostActions();
+  }));
+
+  state.listeners.push(onValue(ref(db, roomPath("startVotes")), (snapshot) => {
+    state.startVotes = snapshot.val() || {};
+    renderLobbyPanel();
+    maybeHostActions();
+  }));
+
+  state.listeners.push(onValue(ref(db, secretPath()), (snapshot) => {
+    state.secret = snapshot.val() || null;
+    renderRolePanel();
+    renderTaskPanel();
+  }));
+
+  attachChatListener();
+}
+
+function handleMetaChange() {
+  const phase = currentPhase();
+  const previousPhase = state.lastPhase;
+  if (phase !== previousPhase) {
+    if (phase === "game" && (previousPhase === "lobby" || previousPhase === "starting" || previousPhase === "join")) {
+      state.controlsVisible = false;
+      state.tasksVisible = false;
+      setTimeout(() => showToast("Press P for controls and T for duties", 3200), 250);
+    }
+    if (phase === "lobby" || phase === "ended") {
+      state.controlsVisible = false;
+      state.tasksVisible = false;
+    }
+    state.lastPhase = phase;
+  }
+  $("phaseLabel").textContent = phase.toUpperCase();
+  $("roomLabel").textContent = state.roomId === PUBLIC_ROOM_ID ? "Public Lobby" : `Private Room ${state.roomId}`;
+  $("connectionLabel").textContent = "Online";
+  $("hostLabel").textContent = isHost() ? "You are host" : "Networked";
+  setVisible("lobbyPanel", phase === "lobby");
+  setVisible("meetingOverlay", phase === "meeting");
+  setVisible("endOverlay", phase === "ended");
+
+  if (phase !== "meeting") state.decreeMode = false;
+  if (phase === "meeting") setVisible("customizeOverlay", false);
+
+  if (phase === "lobby") {
+    state.secret = null;
+    state.mapVisibleUntil = 0;
+    setVisible("mapOverlay", false);
+    setVisible("meetingOverlay", false);
+    setVisible("endOverlay", false);
+  }
+
+  if (phase === "ended") {
+    const loyalistsWon = state.meta?.winner === "loyalists";
+    $("endTitle").textContent = loyalistsWon ? "The Castle Is Saved" : "The Chameleon Prevails";
+    $("endText").textContent = state.meta?.endText || (loyalistsWon
+      ? "The loyal court exposed the Chameleon."
+      : "The Chameleon seized control of the castle.");
+    $("returnLobbyButton").disabled = !isHost();
+    $("returnLobbyButton").textContent = isHost() ? "Return everyone to lobby" : "Waiting for the host";
+  }
+
+  attachChatListener();
+  renderRolePanel();
+  renderTaskPanel();
+  renderLobbyPanel();
+}
+
+async function maybeClaimHost() {
+  if (!state.joined || !state.meta?.hostId || !Object.keys(state.players).length) return;
+  const host = state.players[state.meta.hostId];
+  if (host?.connected) return;
+  try {
+    await runTransaction(ref(db, roomPath("meta/hostId")), (current) => {
+      if (current !== state.meta?.hostId) return current;
+      return state.uid;
+    });
+  } catch (error) {
+    console.warn("Host election failed", error);
+  }
+}
+
+function maybeAttachHostSecrets() {
+  if (!isHost()) {
+    state.hostSecretsUnsub?.();
+    state.hostSecretsUnsub = null;
+    state.allSecrets = state.secret ? { [state.uid]: state.secret } : {};
+    return;
+  }
+  if (state.hostSecretsUnsub) return;
+  state.hostSecretsUnsub = onValue(ref(db, `roomSecrets/${state.roomId}`), (snapshot) => {
+    state.allSecrets = snapshot.val() || {};
+    maybeHostActions();
+  }, (error) => console.warn("Could not read host secrets", error));
+}
+
+function chatPath(channel = "auto", matchId = state.meta?.matchId) {
+  const phase = currentPhase();
+  const wantsGame = channel === "game" || (channel === "auto" && phase !== "lobby");
+  if (wantsGame) return roomPath(`gameMessages/${matchId || "current"}`);
+  return state.roomId === PUBLIC_ROOM_ID
+    ? roomPath("publicLobbyMessages")
+    : roomPath("lobbyMessages");
+}
+
+function currentChatLabel() {
+  if (currentPhase() !== "lobby") return "Match Chat";
+  return state.roomId === PUBLIC_ROOM_ID ? "Public Lobby Chat" : `Private Room Chat · ${state.roomId}`;
+}
+
+function attachChatListener() {
+  if (!state.joined || !state.roomId) return;
+  const key = chatPath();
+  if (key === state.chatChannelKey && state.chatUnsub) {
+    $("chatChannelLabel").textContent = currentChatLabel();
+    return;
+  }
+  state.chatUnsub?.();
+  state.chatChannelKey = key;
+  $("chatMessages").replaceChildren();
+  $("chatChannelLabel").textContent = currentChatLabel();
+  const messageQuery = query(ref(db, key), orderByChild("ts"), limitToLast(80));
+  state.chatUnsub = onValue(messageQuery, (snapshot) => renderMessages(snapshot.val() || {}));
+}
+
+async function sendMessage(text, options = {}) {
+  const clean = String(text || "").trim().slice(0, 140);
+  if (!clean || !state.roomId) return;
+  const sender = options.sender || getMyPlayer()?.name || "Castle";
+  await push(ref(db, chatPath(options.channel || "auto", options.matchId)), {
+    uid: options.uid || state.uid || "system",
+    name: sender,
+    text: clean,
+    system: Boolean(options.system),
+    bot: Boolean(options.bot),
+    ts: Date.now(),
+  });
+}
+
+function renderMessages(messages) {
+  const element = $("chatMessages");
+  const sorted = Object.values(messages).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  element.replaceChildren();
+  for (const message of sorted) {
+    const row = document.createElement("div");
+    row.className = `chat-message${message.system ? " system" : ""}`;
+    if (message.system) {
+      row.textContent = message.text;
+    } else {
+      const name = document.createElement("strong");
+      name.textContent = `${message.name || "Unknown"}: `;
+      const body = document.createTextNode(message.text || "");
+      row.append(name, body);
+    }
+    element.appendChild(row);
+  }
+  element.scrollTop = element.scrollHeight;
+}
+
+function openChat(forceOpen = false) {
+  state.chatOpen = forceOpen || !state.chatOpen;
+  setVisible("chatPanel", state.chatOpen);
+  setVisible("chatToggle", !state.chatOpen && state.joined);
+  if (state.chatOpen) setTimeout(() => $("chatInput").focus(), 0);
+}
+
+$("chatToggle").addEventListener("click", () => openChat());
+$("closeChatButton").addEventListener("click", () => openChat());
+$("chatForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const now = Date.now();
+  if (now - state.lastChatAt < 900) return;
+  const input = $("chatInput");
+  const text = input.value;
+  input.value = "";
+  state.lastChatAt = now;
+  await sendMessage(text);
+});
+
+$("copyRoomButton").addEventListener("click", async () => {
+  const openedAsFile = location.protocol === "file:";
+  const shareText = openedAsFile
+    ? state.roomId
+    : `${location.origin}${location.pathname}?room=${encodeURIComponent(state.roomId)}`;
+  try {
+    await navigator.clipboard.writeText(shareText);
+    showToast(openedAsFile ? "Room code copied" : "Room link copied");
+  } catch {
+    showToast(`Share room code: ${state.roomId}`);
+  }
+});
+
+function renderLobbyPanel() {
+  if (!state.joined || currentPhase() !== "lobby") return;
+  const players = realLobbyPlayers();
+  const onPad = players.filter((player) => player.onPad).slice(0, MAX_PLAYERS);
+  const votes = onPad.filter((player) => state.startVotes[player.id]).length;
+  const needed = onPad.length === MAX_PLAYERS ? 1 : Math.floor(onPad.length / 2) + 1;
+  const me = getMyPlayer();
+
+  $("padStatus").textContent = `${onPad.length} / ${MAX_PLAYERS} real players are standing on the pad.`;
+  $("padMeter").style.width = `${(onPad.length / MAX_PLAYERS) * 100}%`;
+  $("voteStatus").textContent = onPad.length
+    ? `${votes} start vote${votes === 1 ? "" : "s"}; ${needed} needed. Empty slots become bots.`
+    : "No one is on the pad yet.";
+
+  const button = $("startVoteButton");
+  const voted = Boolean(state.startVotes[state.uid]);
+  button.disabled = !me?.onPad;
+  button.textContent = !me?.onPad
+    ? "Stand on the pad to vote"
+    : voted ? "Cancel start vote" : "Vote to start";
+
+  const list = $("lobbyPlayers");
+  list.replaceChildren();
+  for (const player of players) {
+    const tag = document.createElement("span");
+    tag.classList.toggle("on-pad", Boolean(player.onPad));
+    tag.textContent = `${player.name}${player.id === state.uid ? " (you)" : ""}`;
+    list.appendChild(tag);
+  }
+}
+
+$("startVoteButton").addEventListener("click", async () => {
+  const me = getMyPlayer();
+  if (!me?.onPad || currentPhase() !== "lobby") return;
+  const voteRef = ref(db, roomPath(`startVotes/${state.uid}`));
+  if (state.startVotes[state.uid]) await remove(voteRef);
+  else await set(voteRef, true);
+});
+
+function maybeHostActions() {
+  if (!isHost() || state.hostTickBusy) return;
+  const phase = currentPhase();
+  if (phase === "lobby") maybeStartFromVotes();
+}
+
+async function maybeStartFromVotes() {
+  if (!isHost() || state.hostStarting || currentPhase() !== "lobby") return;
+  const onPad = realLobbyPlayers().filter((player) => player.onPad).slice(0, MAX_PLAYERS);
+  if (!onPad.length) return;
+  const votes = onPad.filter((player) => state.startVotes[player.id]).length;
+  const needed = onPad.length === MAX_PLAYERS ? 1 : Math.floor(onPad.length / 2) + 1;
+  if (votes < needed) return;
+  await startGame(onPad);
+}
+
+async function startGame(realParticipants) {
+  if (state.hostStarting || !isHost()) return;
+  state.hostStarting = true;
+  try {
+    const transaction = await runTransaction(ref(db, roomPath("meta/state")), (current) => {
+      if (current !== "lobby") return;
+      return "starting";
+    });
+    if (!transaction.committed) return;
+
+    const matchId = randomId("match");
+    const participantIds = realParticipants.slice(0, MAX_PLAYERS).map((player) => player.id);
+    const botCount = MAX_PLAYERS - participantIds.length;
+    const botIds = Array.from({ length: botCount }, (_, index) => `bot_${matchId}_${index}`);
+    const allIds = [...participantIds, ...botIds];
+    const roles = shuffle(ROLE_DECK);
+    const taskPool = shuffle(TASKS.map((task) => task.id));
+    const updates = {};
+    let tasksIssued = 0;
+
+    const spawnPoints = [
+      [820, 500], [900, 480], [990, 490], [1080, 510], [850, 620],
+      [940, 650], [1030, 625], [1120, 620], [900, 735], [1020, 735],
+    ].map(([x, y]) => [x * MAP_SCALE, y * MAP_SCALE]);
+
+    allIds.forEach((id, index) => {
+      const role = roles[index];
+      const isBot = id.startsWith("bot_");
+      const assignedTasks = TASKER_ROLES.has(role)
+        ? Array.from({ length: INITIAL_TASK_BATCH }, (_, taskIndex) => {
+            const serial = tasksIssued + taskIndex;
+            return makeTaskAssignment(taskPool[serial % taskPool.length], serial);
+          })
+        : [];
+      tasksIssued += assignedTasks.length;
+      const existing = state.players[id] || {};
+      const botName = botNameFor(id, index);
+      const botCustomization = defaultCustomization(id);
+      const [x, y] = spawnPoints[index];
+
+      updates[`${roomPath(`players/${id}`)}`] = {
+        ...existing,
+        name: isBot ? botName : existing.name,
+        isBot,
+        connected: isBot ? true : Boolean(existing.connected),
+        inMatch: true,
+        spectator: false,
+        alive: true,
+        ejected: false,
+        onPad: false,
+        x,
+        y,
+        color: isBot ? botCustomization.color : normalizeCustomization(existing, id).color,
+        outfit: isBot ? botCustomization.outfit : normalizeCustomization(existing, id).outfit,
+        accessory: isBot ? botCustomization.accessory : normalizeCustomization(existing, id).accessory,
+        completedTasks: {},
+        killReadyAt: Date.now() + 9000,
+        invisReadyAt: Date.now() + 4000,
+        mapReadyAt: Date.now() + 4000,
+        invisibleUntil: 0,
+        reviveUsed: false,
+        lastSeen: Date.now(),
+      };
+      updates[secretPath(id)] = { role, tasks: assignedTasks };
+    });
+
+    for (const [id, player] of Object.entries(state.players)) {
+      if (player.isBot && !botIds.includes(id)) updates[roomPath(`players/${id}`)] = null;
+      if (!player.isBot && !participantIds.includes(id)) {
+        updates[roomPath(`players/${id}/inMatch`)] = false;
+        updates[roomPath(`players/${id}/spectator`)] = true;
+        updates[roomPath(`players/${id}/onPad`)] = false;
+      }
+    }
+
+    updates[roomPath("startVotes")] = null;
+    updates[roomPath("bodies")] = null;
+    updates[roomPath("meeting")] = null;
+    updates[roomPath("meta")] = {
+      ...state.meta,
+      state: "game",
+      matchId,
+      startedAt: Date.now(),
+      lastMeetingAt: 0,
+      totalTasks: TASK_GOAL,
+      tasksIssued,
+      winner: null,
+      endText: null,
+      maxPlayers: MAX_PLAYERS,
+      hostId: state.uid,
+      updatedAt: Date.now(),
+    };
+
+    await update(ref(db), updates);
+    await sendMessage(`The castle gates have closed. ${botCount} empty seat${botCount === 1 ? " was" : "s were"} filled by bots.`, {
+      system: true,
+      sender: "Castle Herald",
+      uid: "system",
+      channel: "game",
+      matchId,
+    });
+    state.botBrains.clear();
+  } catch (error) {
+    console.error("Could not start game", error);
+    await set(ref(db, roomPath("meta/state")), "lobby");
+    showToast(`Could not start: ${error.message}`);
+  } finally {
+    state.hostStarting = false;
+  }
+}
+
+function renderRolePanel() {
+  const role = state.secret?.role;
+  const phase = currentPhase();
+  const shouldShow = Boolean(role) && phase !== "lobby" && phase !== "ended" && state.controlsVisible;
+  setVisible("rolePanel", shouldShow);
+  $("mobileControls").classList.toggle("controls-open", shouldShow && phase === "game");
+  if (!role || phase === "lobby" || phase === "ended") return;
+  $("roleName").textContent = role;
+  $("roleDescription").textContent = ROLE_INFO[role]?.description || "Serve the castle.";
+  const list = $("roleAbilities");
+  list.replaceChildren();
+  const me = getMyPlayer();
+  if (!me) return;
+
+  const addButton = (key, label, detail, handler, options = {}) => {
+    const button = document.createElement("button");
+    button.className = `ability-button${options.ready ? " ready" : ""}${options.danger ? " danger" : ""}`;
+    button.disabled = Boolean(options.disabled);
+    const left = document.createElement("span");
+    left.innerHTML = `<span class="keycap">${key}</span> &nbsp;${label}`;
+    const right = document.createElement("span");
+    right.textContent = detail;
+    button.append(left, right);
+    button.addEventListener("click", handler);
+    list.appendChild(button);
+  };
+
+  const now = Date.now();
+  if (role === "Chameleon") {
+    const killRemaining = Math.max(0, (me.killReadyAt || 0) - now);
+    const invisRemaining = Math.max(0, (me.invisReadyAt || 0) - now);
+    addButton("E", "Kill nearest", killRemaining ? `${Math.ceil(killRemaining / 1000)}s` : "Ready", useAbilityOne, {
+      ready: !killRemaining,
+      danger: true,
+      disabled: !me.alive || currentPhase() !== "game" || Boolean(killRemaining),
+    });
+    addButton("R", "Become invisible", invisRemaining ? `${Math.ceil(invisRemaining / 1000)}s` : "Ready", useAbilityTwo, {
+      ready: !invisRemaining,
+      disabled: !me.alive || currentPhase() !== "game" || Boolean(invisRemaining),
+    });
+  } else if (role === "Advisor") {
+    const remaining = Math.max(0, (me.mapReadyAt || 0) - now);
+    addButton("E", "Marauder's Map", remaining ? `${Math.ceil(remaining / 1000)}s` : "Ready", useAbilityOne, {
+      ready: !remaining,
+      disabled: !me.alive || currentPhase() !== "game" || Boolean(remaining),
+    });
+  } else if (role === "Chef") {
+    addButton("E", "Revive nearby body", me.reviveUsed ? "Used" : "Ready", useAbilityOne, {
+      ready: !me.reviveUsed,
+      disabled: !me.alive || me.reviveUsed || currentPhase() !== "game",
+    });
+  } else if (role === "Mason") {
+    addButton("E", "Use nearby sewer", "Near grate", useAbilityOne, {
+      disabled: !me.alive || currentPhase() !== "game",
+    });
+  } else if (role === "King") {
+    addButton("E", "Royal Decree", currentPhase() === "meeting" ? "Choose target" : "Council only", useAbilityOne, {
+      ready: currentPhase() === "meeting" && !state.meeting?.decreeBy,
+      disabled: !me.alive || currentPhase() !== "meeting" || Boolean(state.meeting?.decreeBy),
+    });
+  }
+
+  addButton("F", "Interact / perform duty", TASKER_ROLES.has(role) ? "Hold near task" : "Castle objects", handleInteraction, {
+    disabled: currentPhase() !== "game" || (!me.alive && !TASKER_ROLES.has(role)),
+  });
+  addButton("Q", "Leave match", state.secret?.role === "Chameleon" ? "Loyal court wins" : "Exit immediately", leaveCurrentGame, {
+    danger: true,
+    disabled: !["game", "meeting", "starting", "ended"].includes(currentPhase()),
+  });
+  addButton("T", state.tasksVisible ? "Hide duties" : "Show duties", "Toggle task list", toggleTasksPanel, {
+    disabled: currentPhase() !== "game" || !(state.secret?.tasks || []).length,
+  });
+  addButton("P", "Hide controls", "Toggle this panel", toggleControlsPanel);
+}
+
+function useAbilityOne() {
+  const role = state.secret?.role;
+  if (role === "Chameleon") performKill(state.uid);
+  else if (role === "Advisor") useAdvisorMap();
+  else if (role === "Chef") useChefRevive();
+  else if (role === "Mason") tryOpenNearbySewer();
+  else if (role === "King" && currentPhase() === "meeting" && !state.meeting?.decreeBy) {
+    state.decreeMode = true;
+    showToast("Royal Decree ready — choose a player to silence");
+    renderMeetingPlayers();
+  }
+}
+
+function useAbilityTwo() {
+  if (state.secret?.role === "Chameleon") useInvisibility();
+}
+
+function toggleControlsPanel() {
+  if (!["game", "meeting", "starting"].includes(currentPhase())) return;
+  state.controlsVisible = !state.controlsVisible;
+  renderRolePanel();
+}
+
+function toggleTasksPanel() {
+  if (currentPhase() !== "game" || !(state.secret?.tasks || []).length) return;
+  state.tasksVisible = !state.tasksVisible;
+  renderTaskPanel();
+  renderRolePanel();
+}
+
+function renderTaskPanel() {
+  const assignments = state.secret?.tasks || [];
+  const me = getMyPlayer();
+  if (!assignments.length || !me || currentPhase() !== "game" || !state.tasksVisible) {
+    setVisible("taskPanel", false);
+    return;
+  }
+  setVisible("taskPanel", true);
+  const list = $("taskList");
+  list.replaceChildren();
+  const pending = assignments.filter((assignmentId) => !me.completedTasks?.[assignmentId]).slice(0, INITIAL_TASK_BATCH);
+  if (!pending.length) {
+    const row = document.createElement("div");
+    row.className = "task-row done";
+    row.textContent = "Batch complete — new duties are being assigned…";
+    list.appendChild(row);
+    return;
+  }
+  for (const assignmentId of pending) {
+    const task = taskDefinitionFor(assignmentId);
+    if (!task) continue;
+    const row = document.createElement("div");
+    row.className = "task-row";
+    const icon = document.createElement("span");
+    icon.className = "task-icon";
+    icon.textContent = task.icon;
+    const body = document.createElement("span");
+    const room = ROOMS.find((item) => item.id === task.room)?.name || "Castle";
+    body.textContent = `${task.name} — ${room}`;
+    row.append(icon, body);
+    list.appendChild(row);
+  }
+}
+
+function completedTaskCount() {
+  return activePlayers().reduce((total, player) => total + Object.keys(player.completedTasks || {}).length, 0);
+}
+
+function updateHud(now = Date.now()) {
+  const total = TASK_GOAL;
+  const complete = completedTaskCount();
+  $("taskLabel").textContent = `Royal duties: ${complete} / ${total}`;
+  $("timerLabel").textContent = currentPhase() === "game" && state.meta?.startedAt
+    ? formatDuration(now - state.meta.startedAt)
+    : "";
+  renderRolePanel();
+  renderTaskPanel();
+}
+
+function formatDuration(ms) {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function nearestTask() {
+  const me = getMyPlayer();
+  if (!me || !TASKER_ROLES.has(state.secret?.role) || !state.secret?.tasks?.length) return null;
+  let nearest = null;
+  let nearestDistance = Infinity;
+  for (const assignmentId of state.secret.tasks) {
+    if (me.completedTasks?.[assignmentId]) continue;
+    const task = taskDefinitionFor(assignmentId);
+    if (!task) continue;
+    const d = distance(state.localPos, task);
+    if (d < nearestDistance) {
+      nearest = { ...task, assignmentId };
+      nearestDistance = d;
+    }
+  }
+  return nearestDistance <= 62 ? nearest : null;
+}
+
+async function completeTask(taskId, playerId = state.uid) {
+  if (!taskId || state.taskPending || currentPhase() !== "game") return;
+  if (playerId === state.uid) state.taskPending = true;
+  try {
+    await set(ref(db, roomPath(`players/${playerId}/completedTasks/${taskId}`)), true);
+    if (playerId === state.uid) showToast("Royal duty completed");
+  } finally {
+    if (playerId === state.uid) {
+      state.taskPending = false;
+      state.taskHold = { id: null, elapsed: 0 };
+    }
+  }
+}
+
+function updateTaskHold(deltaMs) {
+  if (!state.keys.f || currentPhase() !== "game" || !TASKER_ROLES.has(state.secret?.role)) {
+    state.taskHold = { id: null, elapsed: 0 };
+    return;
+  }
+  const task = nearestTask();
+  if (!task) {
+    state.taskHold = { id: null, elapsed: 0 };
+    return;
+  }
+  if (state.taskHold.id !== task.assignmentId) state.taskHold = { id: task.assignmentId, elapsed: 0 };
+  state.taskHold.elapsed += deltaMs;
+  if (state.taskHold.elapsed >= 1250) completeTask(task.assignmentId);
+}
+
+async function ensureTaskAssignments() {
+  if (!isHost() || currentPhase() !== "game") return;
+  let issued = Number(state.meta?.tasksIssued || 0);
+  if (issued >= TASK_GOAL) return;
+  const updates = {};
+
+  for (const player of activePlayers()) {
+    if (issued >= TASK_GOAL) break;
+    const secret = state.allSecrets[player.id];
+    if (!secret || !TASKER_ROLES.has(secret.role)) continue;
+    const assignments = secret.tasks || [];
+    const pending = assignments.filter((assignmentId) => !player.completedTasks?.[assignmentId]);
+    if (pending.length) continue;
+
+    const amount = Math.min(INITIAL_TASK_BATCH, TASK_GOAL - issued);
+    const fresh = [];
+    for (let index = 0; index < amount; index += 1) {
+      const serial = issued + index;
+      const seed = hashNumber(`${state.meta?.matchId}:${player.id}:${serial}`);
+      const base = TASKS[seed % TASKS.length];
+      fresh.push(makeTaskAssignment(base.id, serial));
+    }
+    const nextTasks = [...assignments, ...fresh];
+    updates[`${secretPath(player.id)}/tasks`] = nextTasks;
+    if (state.allSecrets[player.id]) state.allSecrets[player.id].tasks = nextTasks;
+    issued += amount;
+  }
+
+  if (Object.keys(updates).length) {
+    updates[roomPath("meta/tasksIssued")] = issued;
+    if (state.meta) state.meta.tasksIssued = issued;
+    await update(ref(db), updates);
+  }
+}
+
+function nearestSewer(position = state.localPos) {
+  let nearest = null;
+  let d = Infinity;
+  for (const sewer of SEWERS) {
+    const candidate = distance(position, sewer);
+    if (candidate < d) {
+      d = candidate;
+      nearest = sewer;
+    }
+  }
+  return d <= 60 ? nearest : null;
+}
+
+function sewerDestinationsFor(origin) {
+  return SEWERS
+    .filter((sewer) => sewer.id !== origin.id)
+    .map((sewer) => ({ ...sewer, travelDistance: distance(origin, sewer) }))
+    .filter((sewer) => sewer.travelDistance <= SEWER_TRAVEL_RANGE)
+    .sort((a, b) => a.travelDistance - b.travelDistance)
+    .slice(0, 3);
+}
+
+function tryOpenNearbySewer() {
+  if (!SEWER_ROLES.has(state.secret?.role) || !getMyPlayer()?.alive || currentPhase() !== "game") return;
+  const near = nearestSewer();
+  if (!near) {
+    showToast("Move closer to a sewer grate");
+    return;
+  }
+  const destinations = sewerDestinationsFor(near);
+  if (!destinations.length) {
+    showToast("This sewer has no nearby connection");
+    return;
+  }
+  $("sewerOriginLabel").textContent = `${near.name} · choose a nearby tunnel`;
+  const container = $("sewerDestinations");
+  container.replaceChildren();
+  const radiusX = Math.min(250, Math.max(150, window.innerWidth * 0.22));
+  const radiusY = Math.min(190, Math.max(125, window.innerHeight * 0.22));
+  for (const sewer of destinations) {
+    const angle = Math.atan2(sewer.y - near.y, sewer.x - near.x);
+    const button = document.createElement("button");
+    button.className = "sewer-arrow";
+    button.style.left = `calc(50% + ${Math.cos(angle) * radiusX}px)`;
+    button.style.top = `calc(50% + ${Math.sin(angle) * radiusY}px)`;
+    button.style.setProperty("--angle", `${angle}rad`);
+    const arrow = document.createElement("span");
+    arrow.className = "sewer-arrow-symbol";
+    arrow.textContent = "➤";
+    const label = document.createElement("span");
+    label.className = "sewer-arrow-label";
+    label.textContent = sewer.name;
+    button.append(arrow, label);
+    button.addEventListener("click", async () => {
+      state.localPos = { x: sewer.x, y: sewer.y - 36 };
+      await update(ref(db, roomPath(`players/${state.uid}`)), {
+        x: state.localPos.x,
+        y: state.localPos.y,
+      });
+      setVisible("sewerOverlay", false);
+      showToast(`Emerged at the ${sewer.name}`);
+    });
+    container.appendChild(button);
+  }
+  setVisible("sewerOverlay", true);
+}
+
+$("closeSewerButton").addEventListener("click", () => setVisible("sewerOverlay", false));
+
+function nearestLivingTarget(killerId) {
+  const killer = state.players[killerId];
+  if (!killer?.alive) return null;
+  let result = null;
+  let best = Infinity;
+  for (const [id, player] of Object.entries(state.players)) {
+    if (id === killerId || !player.inMatch || !player.alive) continue;
+    const d = distance(killer, player);
+    if (d < best) {
+      best = d;
+      result = { id, ...player };
+    }
+  }
+  return best <= 58 ? result : null;
+}
+
+async function performKill(killerId = state.uid) {
+  if (currentPhase() !== "game") return;
+  const killer = state.players[killerId];
+  const role = killerId === state.uid ? state.secret?.role : state.allSecrets[killerId]?.role;
+  if (role !== "Chameleon" || !killer?.alive) return;
+  const now = Date.now();
+  if ((killer.killReadyAt || 0) > now) {
+    if (killerId === state.uid) showToast(`Kill ready in ${Math.ceil((killer.killReadyAt - now) / 1000)}s`);
+    return;
+  }
+  const victim = nearestLivingTarget(killerId);
+  if (!victim) {
+    if (killerId === state.uid) showToast("No player is close enough");
+    return;
+  }
+  const bodyId = randomId("body");
+  const updates = {};
+  updates[roomPath(`players/${victim.id}/alive`)] = false;
+  updates[roomPath(`players/${victim.id}/deathCause`)] = "chameleon";
+  updates[roomPath(`players/${victim.id}/killedAt`)] = now;
+  updates[roomPath(`players/${killerId}/killReadyAt`)] = now + 10000;
+  updates[roomPath(`bodies/${bodyId}`)] = {
+    victimId: victim.id,
+    victimName: victim.name,
+    color: victim.color,
+    x: victim.x,
+    y: victim.y,
+    reported: false,
+    createdAt: now,
+  };
+  await update(ref(db), updates);
+  if (killerId === state.uid) showToast("The Chameleon strikes");
+}
+
+async function useInvisibility() {
+  const me = getMyPlayer();
+  if (state.secret?.role !== "Chameleon" || !me?.alive || currentPhase() !== "game") return;
+  const now = Date.now();
+  if ((me.invisReadyAt || 0) > now) return;
+  await update(ref(db, roomPath(`players/${state.uid}`)), {
+    invisibleUntil: now + 5000,
+    invisReadyAt: now + 20000,
+  });
+  showToast("Invisible for 5 seconds");
+}
+
+async function useAdvisorMap() {
+  const me = getMyPlayer();
+  if (state.secret?.role !== "Advisor" || !me?.alive || currentPhase() !== "game") return;
+  const now = Date.now();
+  if ((me.mapReadyAt || 0) > now) return;
+  state.mapVisibleUntil = now + 5000;
+  await set(ref(db, roomPath(`players/${state.uid}/mapReadyAt`)), now + 20000);
+  setVisible("mapOverlay", true);
+  showToast("The Marauder's Map reveals all players");
+}
+
+function nearestBody(position = state.localPos, maxDistance = 66, includeReported = true) {
+  let result = null;
+  let best = Infinity;
+  for (const [id, body] of Object.entries(state.bodies)) {
+    if (!includeReported && body.reported) continue;
+    const d = distance(position, body);
+    if (d < best) {
+      best = d;
+      result = { id, ...body };
+    }
+  }
+  return best <= maxDistance ? result : null;
+}
+
+async function useChefRevive() {
+  const me = getMyPlayer();
+  if (state.secret?.role !== "Chef" || !me?.alive || me.reviveUsed || currentPhase() !== "game") return;
+  const body = nearestBody(state.localPos, 72, true);
+  if (!body) {
+    showToast("No fallen player is close enough");
+    return;
+  }
+  const victim = state.players[body.victimId];
+  if (!victim || victim.deathCause !== "chameleon") {
+    showToast("This person cannot be revived");
+    return;
+  }
+  const updates = {};
+  updates[roomPath(`players/${body.victimId}/alive`)] = true;
+  updates[roomPath(`players/${body.victimId}/deathCause`)] = null;
+  updates[roomPath(`players/${body.victimId}/killedAt`)] = null;
+  updates[roomPath(`players/${body.victimId}/x`)] = body.x;
+  updates[roomPath(`players/${body.victimId}/y`)] = body.y;
+  updates[roomPath(`players/${state.uid}/reviveUsed`)] = true;
+  updates[roomPath(`bodies/${body.id}`)] = null;
+  await update(ref(db), updates);
+  await sendMessage(`${me.name} used the Chef's final remedy to revive ${body.victimName}.`, {
+    system: true,
+    sender: "Castle Herald",
+    uid: "system",
+  });
+  showToast(`${body.victimName} has been revived`);
+}
+
+async function reportNearbyBody() {
+  const me = getMyPlayer();
+  if (!me?.alive || currentPhase() !== "game") return;
+  const body = nearestBody(state.localPos, 72, false);
+  if (!body) {
+    showToast("No unreported body is nearby");
+    return;
+  }
+  await initiateMeeting(`${me.name} reported ${body.victimName}'s body.`, body.id, state.uid);
+}
+
+async function initiateMeeting(reason, bodyId = null, callerId = state.uid) {
+  const caller = state.players[callerId];
+  if (currentPhase() !== "game" || !caller?.alive) return false;
+  const now = Date.now();
+  if (!bodyId && now - (state.meta?.lastMeetingAt || 0) < 30000) {
+    if (callerId === state.uid) showToast("The council lever is cooling down");
+    return false;
+  }
+
+  const transaction = await runTransaction(ref(db, roomPath("meta")), (meta) => {
+    if (!meta || meta.state !== "game") return;
+    return { ...meta, state: "meeting", lastMeetingAt: now, updatedAt: now };
+  });
+  if (!transaction.committed) return false;
+
+  const meeting = {
+    id: randomId("meeting"),
+    reason,
+    callerId,
+    bodyId: bodyId || "",
+    phase: "voting",
+    createdAt: now,
+    endsAt: now + 35000,
+    votes: {},
+    mutedPlayerId: "",
+    decreeBy: "",
+  };
+  const updates = {};
+  updates[roomPath("meeting")] = meeting;
+  if (bodyId) updates[roomPath(`bodies/${bodyId}/reported`)] = true;
+  await update(ref(db), updates);
+  await sendMessage(reason, { system: true, sender: "Castle Herald", uid: "system", channel: "game" });
+  return true;
+}
+
+function validVoteEntries() {
+  const votes = state.meeting?.votes || {};
+  return Object.entries(votes).filter(([voterId, targetId]) => {
+    const voter = state.players[voterId];
+    if (!voter?.alive || voterId === state.meeting?.mutedPlayerId) return false;
+    return targetId === ABSTAIN_VOTE || Boolean(state.players[targetId]?.alive);
+  });
+}
+
+function voteSummaryFor(targetId) {
+  const names = validVoteEntries()
+    .filter(([, votedFor]) => votedFor === targetId)
+    .map(([voterId]) => state.players[voterId]?.name || "Unknown");
+  if (!names.length) return "0 votes";
+  return `${names.length} vote${names.length === 1 ? "" : "s"}: ${names.join(", ")}`;
+}
+
+function appendVoteSummary(card, targetId) {
+  const summary = document.createElement("div");
+  summary.className = "vote-summary";
+  const count = validVoteEntries().filter(([, votedFor]) => votedFor === targetId).length;
+  const countText = document.createElement("strong");
+  countText.textContent = `${count} vote${count === 1 ? "" : "s"}`;
+  summary.appendChild(countText);
+  if (count) summary.appendChild(document.createTextNode(` · ${voteSummaryFor(targetId).replace(/^\d+ votes?: /, "")}`));
+  card.appendChild(summary);
+}
+
+function renderMeetingPlayers() {
+  if (currentPhase() !== "meeting" || !state.meeting) return;
+  $("meetingReason").textContent = state.meeting.reason || "The council has been called.";
+  const phase = state.meeting.phase || "voting";
+  $("meetingInstruction").textContent = phase === "result"
+    ? "The council's judgment has been recorded."
+    : "Vote for a suspect or abstain. Every vote and voter is visible.";
+  setVisible("meetingResult", phase === "result");
+  if (phase === "result") $("meetingResult").textContent = state.meeting.resultText || "No verdict.";
+
+  const container = $("meetingPlayers");
+  container.replaceChildren();
+  const me = getMyPlayer();
+  const myVote = state.meeting.votes?.[state.uid] || "";
+  const canVote = phase === "voting" && me?.alive && state.meeting.mutedPlayerId !== state.uid;
+  const canDecree = phase === "voting" && state.secret?.role === "King" && me?.alive && !state.meeting.decreeBy && state.decreeMode;
+
+  const abstainCard = document.createElement("div");
+  abstainCard.className = "meeting-player abstain-card";
+  const abstainToken = document.createElement("div");
+  abstainToken.className = "player-token abstain-token";
+  abstainToken.textContent = "—";
+  const abstainInfo = document.createElement("div");
+  const abstainName = document.createElement("strong");
+  abstainName.textContent = "Abstain / Skip Voting";
+  const abstainStatus = document.createElement("div");
+  abstainStatus.style.color = "var(--muted)";
+  abstainStatus.style.fontSize = "11px";
+  abstainStatus.textContent = "Choose no banishment";
+  abstainInfo.append(abstainName, abstainStatus);
+  abstainCard.append(abstainToken, abstainInfo);
+  if (phase === "voting") {
+    const actions = document.createElement("div");
+    actions.className = "player-actions";
+    const vote = document.createElement("button");
+    vote.className = `vote-button${myVote === ABSTAIN_VOTE ? " selected" : ""}`;
+    vote.textContent = myVote === ABSTAIN_VOTE ? "Abstain selected" : "Abstain";
+    vote.disabled = !canVote;
+    vote.addEventListener("click", () => castVote(ABSTAIN_VOTE));
+    actions.appendChild(vote);
+    abstainCard.appendChild(actions);
+  }
+  appendVoteSummary(abstainCard, ABSTAIN_VOTE);
+  container.appendChild(abstainCard);
+
+  for (const player of activePlayers()) {
+    const card = document.createElement("div");
+    card.className = `meeting-player${player.alive ? "" : " dead"}`;
+    const token = document.createElement("div");
+    token.className = "player-token";
+    token.style.background = player.color || colorForId(player.id);
+    const info = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = `${player.name}${player.id === state.uid ? " (you)" : ""}`;
+    const status = document.createElement("div");
+    status.style.color = "var(--muted)";
+    status.style.fontSize = "11px";
+    status.textContent = !player.alive
+      ? "Fallen"
+      : state.meeting.mutedPlayerId === player.id ? "Silenced by Royal Decree" : "Alive";
+    info.append(name, status);
+    card.append(token, info);
+
+    const actions = document.createElement("div");
+    actions.className = "player-actions";
+    if (player.alive && player.id !== state.uid && phase === "voting") {
+      const vote = document.createElement("button");
+      vote.className = `vote-button${myVote === player.id ? " selected" : ""}`;
+      vote.textContent = myVote === player.id ? "Vote selected" : "Vote";
+      vote.disabled = !canVote;
+      vote.addEventListener("click", () => castVote(player.id));
+      actions.appendChild(vote);
+
+      if (canDecree) {
+        const decree = document.createElement("button");
+        decree.className = "decree-button";
+        decree.textContent = "Silence with Decree";
+        decree.addEventListener("click", () => issueRoyalDecree(player.id));
+        actions.appendChild(decree);
+      }
+    }
+    if (actions.childNodes.length) card.appendChild(actions);
+    appendVoteSummary(card, player.id);
+    container.appendChild(card);
+  }
+}
+async function castVote(targetId) {
+  const me = getMyPlayer();
+  if (currentPhase() !== "meeting" || state.meeting?.phase !== "voting" || !me?.alive) return;
+  if (state.meeting.mutedPlayerId === state.uid) {
+    showToast("The Royal Decree prevents your vote");
+    return;
+  }
+  await set(ref(db, roomPath(`meeting/votes/${state.uid}`)), targetId);
+}
+
+async function issueRoyalDecree(targetId, kingId = state.uid) {
+  const kingRole = kingId === state.uid ? state.secret?.role : state.allSecrets[kingId]?.role;
+  const king = state.players[kingId];
+  if (kingRole !== "King" || !king?.alive || currentPhase() !== "meeting" || state.meeting?.decreeBy) return;
+  const target = state.players[targetId];
+  if (!target?.alive || targetId === kingId) return;
+  const updates = {};
+  updates[roomPath("meeting/mutedPlayerId")] = targetId;
+  updates[roomPath("meeting/decreeBy")] = kingId;
+  updates[roomPath(`meeting/votes/${targetId}`)] = null;
+  await update(ref(db), updates);
+  if (kingId === state.uid) state.decreeMode = false;
+  await sendMessage(`${king.name} issued a Royal Decree: ${target.name} may not vote.`, {
+    system: true,
+    sender: "Castle Herald",
+    uid: "system",
+  });
+}
+
+async function processMeetingHost() {
+  if (!isHost() || currentPhase() !== "meeting" || !state.meeting) return;
+  if (state.meeting.phase === "result") {
+    if (Date.now() >= (state.meeting.resumeAt || Infinity)) {
+      if (state.meeting.winnerAfter) {
+        await endGame(state.meeting.winnerAfter, state.meeting.winnerText);
+      } else {
+        const updates = {};
+        updates[roomPath("meta/state")] = "game";
+        updates[roomPath("meeting")] = null;
+        await update(ref(db), updates);
+        await checkWinConditions();
+      }
+    }
+    return;
+  }
+
+  await runBotMeetingActions();
+  const eligible = alivePlayers().filter((player) => player.id !== state.meeting.mutedPlayerId);
+  const votes = state.meeting.votes || {};
+  const allVoted = eligible.length > 0 && eligible.every((player) => Boolean(votes[player.id]));
+  if (Date.now() >= (state.meeting.endsAt || 0) || (allVoted && Date.now() - (state.meeting.createdAt || 0) > 4000)) {
+    await finalizeMeeting();
+  }
+}
+
+async function finalizeMeeting() {
+  if (!isHost() || state.finalizingMeeting || state.meeting?.phase !== "voting") return;
+  state.finalizingMeeting = true;
+  try {
+    const validEntries = validVoteEntries();
+    const counts = {};
+    const votersByTarget = {};
+    for (const [voterId, targetId] of validEntries) {
+      counts[targetId] = (counts[targetId] || 0) + 1;
+      (votersByTarget[targetId] ||= []).push(state.players[voterId]?.name || "Unknown");
+    }
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    let winningTarget = "";
+    if (sorted.length && (sorted.length === 1 || sorted[0][1] > sorted[1][1])) winningTarget = sorted[0][0];
+    const ejectedId = winningTarget && winningTarget !== ABSTAIN_VOTE ? winningTarget : "";
+
+    let resultText = sorted.length ? "The vote was tied. No one was banished." : "No votes were cast. No one was banished.";
+    if (winningTarget === ABSTAIN_VOTE) resultText = "The council chose to abstain. No one was banished.";
+    let winnerAfter = "";
+    let winnerText = "";
+    const updates = {};
+    if (ejectedId) {
+      const ejected = state.players[ejectedId];
+      const role = state.allSecrets[ejectedId]?.role;
+      resultText = `${ejected?.name || "A player"} was banished. Their role was ${role || "unknown"}.`;
+      updates[roomPath(`players/${ejectedId}/alive`)] = false;
+      updates[roomPath(`players/${ejectedId}/ejected`)] = true;
+      updates[roomPath(`players/${ejectedId}/deathCause`)] = "ejected";
+      if (role === "Chameleon") {
+        winnerAfter = "loyalists";
+        winnerText = "The council exposed and banished the Chameleon.";
+      }
+    }
+
+    const breakdown = sorted.length
+      ? sorted.map(([targetId, count]) => {
+          const targetName = targetId === ABSTAIN_VOTE ? "Abstain" : (state.players[targetId]?.name || "Unknown");
+          return `${targetName}: ${count} — ${(votersByTarget[targetId] || []).join(", ")}`;
+        }).join("\n")
+      : "Vote totals: none";
+    resultText = `${resultText}\n\n${breakdown}`;
+
+    updates[roomPath("meeting/phase")] = "result";
+    updates[roomPath("meeting/resultText")] = resultText;
+    updates[roomPath("meeting/ejectedId")] = ejectedId;
+    updates[roomPath("meeting/resumeAt")] = Date.now() + 6500;
+    updates[roomPath("meeting/winnerAfter")] = winnerAfter;
+    updates[roomPath("meeting/winnerText")] = winnerText;
+    await update(ref(db), updates);
+    await sendMessage(resultText, { system: true, sender: "Castle Herald", uid: "system", channel: "game" });
+  } finally {
+    state.finalizingMeeting = false;
+  }
+}
+async function checkWinConditions() {
+  if (!isHost() || currentPhase() !== "game") return;
+  const totalTasks = TASK_GOAL;
+  if (completedTaskCount() >= totalTasks) {
+    await endGame("loyalists", "Every royal duty was completed before the Chameleon could take the castle.");
+    return;
+  }
+
+  const chameleonEntry = Object.entries(state.allSecrets).find(([, secret]) => secret?.role === "Chameleon");
+  if (!chameleonEntry) return;
+  const [chameleonId] = chameleonEntry;
+  const chameleon = state.players[chameleonId];
+  if (!chameleon?.alive) {
+    await endGame("loyalists", "The Chameleon was eliminated and the loyal court survived.");
+    return;
+  }
+  const loyalAlive = alivePlayers().filter((player) => player.id !== chameleonId).length;
+  if (loyalAlive <= 1) {
+    await endGame("chameleon", "The Chameleon reached parity with the remaining court and seized the throne.");
+  }
+}
+
+async function endGame(winner, text) {
+  if (!isHost() || currentPhase() === "ended") return;
+  await update(ref(db, roomPath("meta")), {
+    state: "ended",
+    winner,
+    endText: text,
+    endedAt: Date.now(),
+  });
+  await sendMessage(text, { system: true, sender: "Castle Herald", uid: "system", channel: "game" });
+}
+
+$("returnLobbyButton").addEventListener("click", resetToLobby);
+
+async function resetToLobby() {
+  if (!isHost()) return;
+  const updates = {};
+  for (const [id, player] of Object.entries(state.players)) {
+    if (player.isBot) {
+      updates[roomPath(`players/${id}`)] = null;
+    } else {
+      updates[roomPath(`players/${id}/inMatch`)] = false;
+      updates[roomPath(`players/${id}/spectator`)] = false;
+      updates[roomPath(`players/${id}/alive`)] = true;
+      updates[roomPath(`players/${id}/ejected`)] = false;
+      updates[roomPath(`players/${id}/deathCause`)] = null;
+      updates[roomPath(`players/${id}/onPad`)] = false;
+      updates[roomPath(`players/${id}/completedTasks`)] = null;
+      updates[roomPath(`players/${id}/x`)] = 590 + Math.random() * 100;
+      updates[roomPath(`players/${id}/y`)] = 555 + Math.random() * 70;
+    }
+  }
+  updates[roomPath("bodies")] = null;
+  updates[roomPath("meeting")] = null;
+  updates[roomPath("startVotes")] = null;
+  updates[`roomSecrets/${state.roomId}`] = null;
+  updates[roomPath("meta")] = {
+    hostId: state.uid,
+    state: "lobby",
+    maxPlayers: MAX_PLAYERS,
+    createdAt: state.meta?.createdAt || Date.now(),
+    updatedAt: Date.now(),
+  };
+  await update(ref(db), updates);
+  state.botBrains.clear();
+}
+
+function updateMovement(deltaSeconds) {
+  if (!state.joined || !getMyPlayer()) return;
+  const phase = currentPhase();
+  if (phase === "meeting" || phase === "ended" || phase === "starting") return;
+  const me = getMyPlayer();
+  if (phase === "game" && (!me.inMatch || me.spectator)) return;
+
+  let dx = 0;
+  let dy = 0;
+  if (state.keys.w || state.keys.arrowup) dy -= 1;
+  if (state.keys.s || state.keys.arrowdown) dy += 1;
+  if (state.keys.a || state.keys.arrowleft) dx -= 1;
+  if (state.keys.d || state.keys.arrowright) dx += 1;
+  if (!dx && !dy) return;
+  const length = Math.hypot(dx, dy) || 1;
+  dx /= length;
+  dy /= length;
+  const speed = phase === "lobby" ? 220 : me.alive ? 205 : 245;
+  const stepX = dx * speed * deltaSeconds;
+  const stepY = dy * speed * deltaSeconds;
+  let nextX = state.localPos.x + stepX;
+  let nextY = state.localPos.y + stepY;
+
+  if (phase === "lobby") {
+    nextX = clamp(nextX, 55, LOBBY_SIZE.width - 55);
+    nextY = clamp(nextY, 90, LOBBY_SIZE.height - 45);
+  } else if (!me.alive) {
+    nextX = clamp(nextX, 35, WORLD_SIZE.width - 35);
+    nextY = clamp(nextY, 35, WORLD_SIZE.height - 35);
+  } else {
+    if (!isWalkable(nextX, state.localPos.y)) nextX = state.localPos.x;
+    if (!isWalkable(nextX, nextY)) nextY = state.localPos.y;
+  }
+
+  state.localPos = { x: nextX, y: nextY };
+  syncMovement();
+  if (phase === "lobby") syncPadStatus();
+}
+
+function syncMovement(force = false) {
+  const now = performance.now();
+  if (!force && now - state.lastMoveWrite < 80) return;
+  state.lastMoveWrite = now;
+  update(ref(db, roomPath(`players/${state.uid}`)), {
+    x: Math.round(state.localPos.x * 10) / 10,
+    y: Math.round(state.localPos.y * 10) / 10,
+    lastSeen: serverTimestamp(),
+  }).catch((error) => console.warn("Movement sync failed", error));
+}
+
+function syncPadStatus() {
+  const inside = pointInRect(state.localPos.x, state.localPos.y, LOBBY_PAD, -3);
+  const already = Boolean(getMyPlayer()?.onPad);
+  const occupancy = realLobbyPlayers().filter((player) => player.onPad).length;
+  const allowed = inside && (already || occupancy < MAX_PLAYERS);
+  if (allowed === state.lastPadValue && allowed === already) return;
+  state.lastPadValue = allowed;
+  update(ref(db, roomPath(`players/${state.uid}`)), { onPad: allowed }).catch(console.warn);
+  if (!allowed && state.startVotes[state.uid]) remove(ref(db, roomPath(`startVotes/${state.uid}`))).catch(console.warn);
+}
+
+function handleInteraction() {
+  if (currentPhase() !== "game" || !getMyPlayer()?.alive) return;
+  const body = nearestBody(state.localPos, 72, false);
+  if (body) {
+    reportNearbyBody();
+    return;
+  }
+  const sewer = nearestSewer();
+  if (sewer && SEWER_ROLES.has(state.secret?.role)) {
+    tryOpenNearbySewer();
+    return;
+  }
+  if (distance(state.localPos, LEVER) <= 65) {
+    initiateMeeting(`${getMyPlayer()?.name || "A player"} pulled the emergency council lever.`, null, state.uid);
+  }
+}
+
+function updateInteractionPrompt() {
+  const prompt = $("interactionPrompt");
+  let text = "";
+  if (currentPhase() === "lobby") {
+    const me = getMyPlayer();
+    text = me?.onPad ? "You are on the yellow pad. Use the vote panel to start." : "Move onto the yellow pad to join the start vote.";
+  } else if (currentPhase() === "game") {
+    const me = getMyPlayer();
+    const task = nearestTask();
+    if (task) {
+      const progress = Math.min(100, (state.taskHold.elapsed / 1250) * 100);
+      text = `Hold F: ${task.name} (${Math.round(progress)}%)`;
+    } else if (me?.alive) {
+      const sewer = nearestSewer();
+      const body = nearestBody(state.localPos, 72, false);
+      if (body) {
+        text = state.secret?.role === "Chef" && !me.reviveUsed
+          ? `F: Report ${body.victimName}  •  E: Revive`
+          : `F: Report ${body.victimName}`;
+      } else if (sewer && SEWER_ROLES.has(state.secret?.role)) {
+        text = "F: Enter the castle sewers";
+      } else if (distance(state.localPos, LEVER) <= 68) {
+        text = "F: Pull the emergency council lever";
+      }
+    } else if (TASKER_ROLES.has(state.secret?.role)) {
+      text = "You are a ghost. Continue your royal duties to help reach 75.";
+    } else {
+      text = "You are a ghost. You may explore and use chat.";
+    }
+  }
+  prompt.textContent = text;
+  prompt.classList.toggle("hidden", !text);
+}
+
+async function leaveCurrentGame() {
+  const phase = currentPhase();
+  const me = getMyPlayer();
+  if (!state.joined || !me || !["game", "meeting", "starting", "ended"].includes(phase)) return;
+  const leavingRoomId = state.roomId;
+  const leavingName = me.name || "A player";
+  const isChameleon = state.secret?.role === "Chameleon";
+  const remainingHumans = activePlayers().filter((player) => !player.isBot && player.id !== state.uid && player.connected);
+  const updates = {};
+  updates[roomPath(`players/${state.uid}/connected`)] = false;
+  updates[roomPath(`players/${state.uid}/inMatch`)] = false;
+  updates[roomPath(`players/${state.uid}/spectator`)] = true;
+  updates[roomPath(`players/${state.uid}/alive`)] = false;
+  updates[roomPath(`players/${state.uid}/leftGame`)] = true;
+  updates[roomPath(`players/${state.uid}/onPad`)] = false;
+  if (isHost() && remainingHumans.length) updates[roomPath("meta/hostId")] = remainingHumans[0].id;
+  if (isChameleon && phase !== "ended") {
+    updates[roomPath("meta/state")] = "ended";
+    updates[roomPath("meta/winner")] = "loyalists";
+    updates[roomPath("meta/endText")] = `${leavingName}, the Chameleon, left the match. The loyal court wins.`;
+    updates[roomPath("meta/endedAt")] = Date.now();
+  }
+  try {
+    await update(ref(db), updates);
+    await sendMessage(isChameleon
+      ? `${leavingName}, the Chameleon, fled the castle. The loyal court wins.`
+      : `${leavingName} left the match.`, {
+      system: true,
+      sender: "Castle Herald",
+      uid: "system",
+      channel: "game",
+      matchId: state.meta?.matchId,
+    });
+  } catch (error) {
+    console.warn("Could not fully update leave state", error);
+  }
+  exitToJoinScreen(leavingRoomId);
+}
+
+function exitToJoinScreen(previousRoomId) {
+  clearListeners();
+  state.joined = false;
+  state.roomId = null;
+  state.meta = null;
+  state.players = {};
+  state.bodies = {};
+  state.meeting = null;
+  state.secret = null;
+  state.allSecrets = {};
+  state.controlsVisible = false;
+  state.tasksVisible = false;
+  state.chatOpen = false;
+  state.lastPhase = "join";
+  state.keys = {};
+  setVisible("topHud", false);
+  setVisible("rolePanel", false);
+  setVisible("lobbyPanel", false);
+  setVisible("taskPanel", false);
+  setVisible("chatPanel", false);
+  setVisible("chatToggle", false);
+  setVisible("meetingOverlay", false);
+  setVisible("sewerOverlay", false);
+  setVisible("mapOverlay", false);
+  setVisible("endOverlay", false);
+  $("mobileControls").classList.remove("controls-open");
+  $("roomInput").value = previousRoomId || $("roomInput").value || PUBLIC_ROOM_ID;
+  $("joinButton").disabled = false;
+  $("joinStatus").textContent = "You left the match. Join again whenever you are ready.";
+  $("joinScreen").classList.remove("hidden");
+  $("joinScreen").classList.add("visible");
+}
+
+window.addEventListener("keydown", (event) => {
+  const key = event.key.toLowerCase();
+  if (event.target instanceof HTMLInputElement) {
+    if (event.key === "Escape" && state.chatOpen) openChat();
+    return;
+  }
+  if (key === "/") {
+    event.preventDefault();
+    openChat(true);
+    return;
+  }
+  if (key === "tab") {
+    event.preventDefault();
+    if (currentPhase() !== "meeting") openCustomizer();
+    return;
+  }
+  if (key === "p") {
+    event.preventDefault();
+    toggleControlsPanel();
+    return;
+  }
+  if (key === "t") {
+    event.preventDefault();
+    toggleTasksPanel();
+    return;
+  }
+  if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) event.preventDefault();
+  state.keys[key] = true;
+  if (event.repeat) return;
+  if (key === "e") useAbilityOne();
+  if (key === "r") useAbilityTwo();
+  if (key === "f") handleInteraction();
+  if (key === "q") leaveCurrentGame();
+  if (key === "escape") {
+    setVisible("sewerOverlay", false);
+    setVisible("customizeOverlay", false);
+    if (state.chatOpen) openChat();
+  }
+});
+
+window.addEventListener("keyup", (event) => {
+  const key = event.key.toLowerCase();
+  state.keys[key] = false;
+  if (key === "f") state.taskHold = { id: null, elapsed: 0 };
+});
+
+window.addEventListener("blur", () => {
+  state.keys = {};
+  state.taskHold = { id: null, elapsed: 0 };
+});
+
+document.querySelectorAll("[data-key]").forEach((button) => {
+  const key = button.dataset.key;
+  const down = (event) => { event.preventDefault(); state.keys[key] = true; };
+  const up = (event) => { event.preventDefault(); state.keys[key] = false; };
+  button.addEventListener("pointerdown", down);
+  button.addEventListener("pointerup", up);
+  button.addEventListener("pointercancel", up);
+  button.addEventListener("pointerleave", up);
+});
+$("mobileAbilityOne").addEventListener("click", useAbilityOne);
+$("mobileAbilityTwo").addEventListener("click", useAbilityTwo);
+$("mobileInteract").addEventListener("pointerdown", () => { state.keys.f = true; handleInteraction(); });
+$("mobileInteract").addEventListener("pointerup", () => { state.keys.f = false; state.taskHold = { id: null, elapsed: 0 }; });
+$("mobileReport").addEventListener("click", leaveCurrentGame);
+
+function setupCustomizer() {
+  const colorContainer = $("colorChoices");
+  const outfitContainer = $("outfitChoices");
+  const accessoryContainer = $("accessoryChoices");
+  colorContainer.replaceChildren();
+  outfitContainer.replaceChildren();
+  accessoryContainer.replaceChildren();
+
+  for (const color of PLAYER_COLORS) {
+    const button = document.createElement("button");
+    button.className = "color-swatch";
+    button.style.background = color;
+    button.title = color;
+    button.addEventListener("click", () => { state.customDraft.color = color; refreshCustomizer(); });
+    button.dataset.value = color;
+    colorContainer.appendChild(button);
+  }
+  for (const outfit of OUTFITS) {
+    const button = document.createElement("button");
+    button.className = "custom-option";
+    button.textContent = OUTFIT_LABELS[outfit];
+    button.dataset.value = outfit;
+    button.addEventListener("click", () => { state.customDraft.outfit = outfit; refreshCustomizer(); });
+    outfitContainer.appendChild(button);
+  }
+  for (const accessory of ACCESSORIES) {
+    const button = document.createElement("button");
+    button.className = "custom-option";
+    button.textContent = ACCESSORY_LABELS[accessory];
+    button.dataset.value = accessory;
+    button.addEventListener("click", () => { state.customDraft.accessory = accessory; refreshCustomizer(); });
+    accessoryContainer.appendChild(button);
+  }
+}
+
+function openCustomizer() {
+  if (!state.joined) return;
+  state.customDraft = normalizeCustomization(getMyPlayer() || {}, state.uid);
+  refreshCustomizer();
+  setVisible("customizeOverlay", true);
+}
+
+function refreshCustomizer() {
+  if (!state.customDraft) return;
+  document.querySelectorAll("#colorChoices .color-swatch").forEach((button) => button.classList.toggle("selected", button.dataset.value === state.customDraft.color));
+  document.querySelectorAll("#outfitChoices .custom-option").forEach((button) => button.classList.toggle("selected", button.dataset.value === state.customDraft.outfit));
+  document.querySelectorAll("#accessoryChoices .custom-option").forEach((button) => button.classList.toggle("selected", button.dataset.value === state.customDraft.accessory));
+  const preview = $("customPreview");
+  const previewCtx = preview.getContext("2d");
+  previewCtx.clearRect(0, 0, preview.width, preview.height);
+  const glow = previewCtx.createRadialGradient(preview.width / 2, preview.height / 2, 20, preview.width / 2, preview.height / 2, 140);
+  glow.addColorStop(0, "rgba(240,201,75,.22)");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  previewCtx.fillStyle = glow;
+  previewCtx.fillRect(0, 0, preview.width, preview.height);
+  previewCtx.save();
+  previewCtx.translate(preview.width / 2, preview.height / 2 + 25);
+  previewCtx.scale(2.25, 2.25);
+  drawCourtier(previewCtx, state.customDraft, true, true, 1);
+  previewCtx.restore();
+}
+
+async function saveCustomization() {
+  if (!state.customDraft || !state.uid) return;
+  const clean = normalizeCustomization(state.customDraft, state.uid);
+  safeStorageSet("traitorCustomization", JSON.stringify(clean));
+  await update(ref(db, roomPath(`players/${state.uid}`)), clean);
+  setVisible("customizeOverlay", false);
+  showToast("Character customization saved");
+}
+
+$("customizeButton").addEventListener("click", openCustomizer);
+$("closeCustomizeButton").addEventListener("click", () => setVisible("customizeOverlay", false));
+$("cancelCustomizeButton").addEventListener("click", () => setVisible("customizeOverlay", false));
+$("saveCustomizeButton").addEventListener("click", saveCustomization);
+setupCustomizer();
+
+function drawRoundedRect(context, x, y, w, h, radius) {
+  const r = Math.min(radius, w / 2, h / 2);
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.arcTo(x + w, y, x + w, y + h, r);
+  context.arcTo(x + w, y + h, x, y + h, r);
+  context.arcTo(x, y + h, x, y, r);
+  context.arcTo(x, y, x + w, y, r);
+  context.closePath();
+}
+
+function drawLobby(context) {
+  context.fillStyle = "#08080d";
+  context.fillRect(0, 0, LOBBY_SIZE.width, LOBBY_SIZE.height);
+
+  const gradient = context.createRadialGradient(600, 350, 50, 600, 350, 640);
+  gradient.addColorStop(0, "#25202c");
+  gradient.addColorStop(1, "#07070b");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, LOBBY_SIZE.width, LOBBY_SIZE.height);
+
+  context.fillStyle = "#17151d";
+  context.strokeStyle = "#4b4653";
+  context.lineWidth = 8;
+  drawRoundedRect(context, 45, 70, 1110, 585, 20);
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = "#111018";
+  for (let x = 70; x < 1140; x += 76) {
+    for (let y = 95; y < 640; y += 58) {
+      context.fillRect(x + ((y / 58) % 2) * 22, y, 62, 45);
+    }
+  }
+
+  const padGlow = context.createRadialGradient(600, 333, 10, 600, 333, 185);
+  padGlow.addColorStop(0, "rgba(255,240,110,.75)");
+  padGlow.addColorStop(1, "rgba(240,201,75,.03)");
+  context.fillStyle = padGlow;
+  context.fillRect(405, 150, 390, 370);
+
+  context.fillStyle = "#d2a924";
+  context.strokeStyle = "#fff3a3";
+  context.lineWidth = 5;
+  drawRoundedRect(context, LOBBY_PAD.x, LOBBY_PAD.y, LOBBY_PAD.w, LOBBY_PAD.h, 20);
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = "rgba(58,42,8,.7)";
+  context.font = "900 23px Georgia";
+  context.textAlign = "center";
+  context.fillText("STARTING PAD", 600, 328);
+  context.font = "700 14px system-ui";
+  context.fillText("Stand here and vote", 600, 352);
+
+  drawTorch(context, 175, 170);
+  drawTorch(context, 1025, 170);
+  drawTorch(context, 175, 560);
+  drawTorch(context, 1025, 560);
+
+  context.fillStyle = "#d9cfb3";
+  context.font = "900 42px Georgia";
+  context.fillText("TRAITOR", 600, 130);
+}
+
+function drawTorch(context, x, y) {
+  const glow = context.createRadialGradient(x, y, 2, x, y, 72);
+  glow.addColorStop(0, "rgba(255,185,70,.8)");
+  glow.addColorStop(1, "rgba(255,145,40,0)");
+  context.fillStyle = glow;
+  context.fillRect(x - 75, y - 75, 150, 150);
+  context.fillStyle = "#704927";
+  context.fillRect(x - 4, y + 8, 8, 34);
+  context.fillStyle = "#ffbd45";
+  context.beginPath();
+  context.moveTo(x, y - 22);
+  context.quadraticCurveTo(x + 18, y, x, y + 18);
+  context.quadraticCurveTo(x - 18, y, x, y - 22);
+  context.fill();
+}
+
+function drawCastle(context) {
+  context.fillStyle = "#08080c";
+  context.fillRect(0, 0, WORLD_SIZE.width, WORLD_SIZE.height);
+
+  for (const corridor of CORRIDORS) {
+    context.fillStyle = "#24212a";
+    context.fillRect(corridor.x, corridor.y, corridor.w, corridor.h);
+    context.strokeStyle = "#55505d";
+    context.lineWidth = 6;
+    context.strokeRect(corridor.x, corridor.y, corridor.w, corridor.h);
+  }
+
+  for (const room of ROOMS) {
+    const floor = context.createLinearGradient(room.x, room.y, room.x + room.w, room.y + room.h);
+    floor.addColorStop(0, room.id === "courtyard" ? "#243128" : "#292630");
+    floor.addColorStop(1, room.id === "courtyard" ? "#17251d" : "#18171e");
+    context.fillStyle = floor;
+    context.strokeStyle = "#5a5562";
+    context.lineWidth = 10;
+    drawRoundedRect(context, room.x, room.y, room.w, room.h, 12);
+    context.fill();
+    context.stroke();
+
+    context.strokeStyle = "rgba(255,255,255,.035)";
+    context.lineWidth = 2;
+    for (let x = room.x + 24; x < room.x + room.w - 20; x += 52) {
+      context.beginPath();
+      context.moveTo(x, room.y + 12);
+      context.lineTo(x, room.y + room.h - 12);
+      context.stroke();
+    }
+    for (let y = room.y + 28; y < room.y + room.h - 20; y += 44) {
+      context.beginPath();
+      context.moveTo(room.x + 12, y);
+      context.lineTo(room.x + room.w - 12, y);
+      context.stroke();
+    }
+
+    context.fillStyle = "rgba(235,224,196,.72)";
+    context.font = "700 18px Georgia";
+    context.textAlign = "center";
+    context.fillText(room.name, room.x + room.w / 2, room.y + 28);
+  }
+
+  drawRoomDecor(context);
+
+  context.fillStyle = "#9b6e37";
+  context.strokeStyle = "#e6bd63";
+  context.lineWidth = 4;
+  context.beginPath();
+  context.arc(LEVER.x, LEVER.y, LEVER.radius, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+  context.fillStyle = "#efe2b9";
+  context.font = "900 22px Georgia";
+  context.textAlign = "center";
+  context.fillText("LEVER", LEVER.x, LEVER.y + 7);
+
+  for (const sewer of SEWERS) drawSewer(context, sewer);
+  drawLocalTasks(context);
+  drawBodies(context);
+}
+
+function drawRoomDecor(context) {
+  const s = MAP_SCALE;
+  context.fillStyle = "#5a3a25";
+  context.fillRect(305 * s, 145 * s, 105 * s, 52 * s);
+  context.fillStyle = "#8d5b2f";
+  context.fillRect(805 * s, 430 * s, 290 * s, 70 * s);
+  context.fillStyle = "#59383a";
+  context.fillRect(860 * s, 105 * s, 180 * s, 70 * s);
+  context.fillStyle = "#33313a";
+  for (let i = 0; i < 4; i += 1) context.fillRect((1410 + i * 82) * s, 145 * s, 48 * s, 160 * s);
+  context.fillStyle = "#47604e";
+  context.beginPath();
+  context.arc(1575 * s, 975 * s, 55 * s, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = "#1d2a22";
+  context.beginPath();
+  context.arc(1575 * s, 975 * s, 29 * s, 0, Math.PI * 2);
+  context.fill();
+  drawTorch(context, 735 * s, 390 * s);
+  drawTorch(context, 1165 * s, 760 * s);
+  drawTorch(context, 790 * s, 905 * s);
+  drawTorch(context, 1110 * s, 905 * s);
+}
+
+function drawSewer(context, sewer) {
+  context.fillStyle = "#080b0e";
+  context.strokeStyle = "#536168";
+  context.lineWidth = 4;
+  context.beginPath();
+  context.arc(sewer.x, sewer.y, 22, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+  context.strokeStyle = "#65727a";
+  context.lineWidth = 2;
+  for (let angle = 0; angle < Math.PI; angle += Math.PI / 4) {
+    context.beginPath();
+    context.moveTo(sewer.x + Math.cos(angle) * 18, sewer.y + Math.sin(angle) * 18);
+    context.lineTo(sewer.x - Math.cos(angle) * 18, sewer.y - Math.sin(angle) * 18);
+    context.stroke();
+  }
+}
+
+function drawLocalTasks(context) {
+  const me = getMyPlayer();
+  if (!me || !TASKER_ROLES.has(state.secret?.role) || !state.secret?.tasks) return;
+  for (const assignmentId of state.secret.tasks) {
+    if (me.completedTasks?.[assignmentId]) continue;
+    const task = taskDefinitionFor(assignmentId);
+    if (!task) continue;
+    const pulse = 1 + Math.sin(performance.now() / 250) * 0.15;
+    context.save();
+    context.translate(task.x, task.y);
+    context.scale(pulse, pulse);
+    context.fillStyle = "rgba(240,201,75,.22)";
+    context.beginPath();
+    context.arc(0, 0, 31, 0, Math.PI * 2);
+    context.fill();
+    context.font = "26px system-ui";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(task.icon, 0, 0);
+    context.restore();
+  }
+}
+
+function drawBodies(context) {
+  for (const body of Object.values(state.bodies)) {
+    context.save();
+    context.translate(body.x, body.y);
+    context.rotate(-0.16);
+    context.fillStyle = "rgba(0,0,0,.32)";
+    context.beginPath();
+    context.ellipse(0, 18, 42, 12, 0, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = body.color || "#777";
+    context.beginPath();
+    context.moveTo(-31, -8);
+    context.lineTo(20, -14);
+    context.lineTo(35, 14);
+    context.lineTo(-25, 24);
+    context.closePath();
+    context.fill();
+    context.fillStyle = "#d8b38b";
+    context.beginPath();
+    context.arc(31, -7, 12, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#37281e";
+    context.fillRect(-36, 15, 17, 9);
+    context.fillRect(-20, 23, 17, 9);
+    if (body.reported) {
+      context.fillStyle = "#d9bd62";
+      context.font = "700 11px system-ui";
+      context.textAlign = "center";
+      context.fillText("REPORTED", 0, 48);
+    }
+    context.restore();
+  }
+}
+
+function shadeColor(hex, amount) {
+  const value = parseInt(String(hex).replace("#", ""), 16);
+  const r = clamp((value >> 16) + amount, 0, 255);
+  const g = clamp(((value >> 8) & 255) + amount, 0, 255);
+  const b = clamp((value & 255) + amount, 0, 255);
+  return `rgb(${r},${g},${b})`;
+}
+
+function drawCourtier(context, customization, isMe = false, alive = true, alpha = 1) {
+  const custom = normalizeCustomization(customization || {});
+  context.save();
+  context.globalAlpha *= alive ? alpha : alpha * 0.42;
+
+  context.fillStyle = "rgba(0,0,0,.34)";
+  context.beginPath();
+  context.ellipse(0, 29, 27, 8, 0, 0, Math.PI * 2);
+  context.fill();
+
+  if (custom.outfit === "cloak") {
+    context.fillStyle = shadeColor(custom.color, -34);
+    context.beginPath();
+    context.moveTo(-24, -4);
+    context.quadraticCurveTo(-34, 18, -27, 31);
+    context.lineTo(27, 31);
+    context.quadraticCurveTo(34, 18, 24, -4);
+    context.closePath();
+    context.fill();
+  }
+
+  context.fillStyle = "#3a2a20";
+  drawRoundedRect(context, -18, 20, 14, 18, 4); context.fill();
+  drawRoundedRect(context, 4, 20, 14, 18, 4); context.fill();
+
+  context.fillStyle = custom.color;
+  context.strokeStyle = isMe ? "#fff0a6" : "rgba(255,255,255,.42)";
+  context.lineWidth = isMe ? 3 : 2;
+  context.beginPath();
+  context.moveTo(-21, -7);
+  context.quadraticCurveTo(-25, 8, -23, 27);
+  context.lineTo(23, 27);
+  context.quadraticCurveTo(25, 8, 21, -7);
+  context.quadraticCurveTo(0, -18, -21, -7);
+  context.closePath();
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = shadeColor(custom.color, -25);
+  drawRoundedRect(context, -31, -2, 11, 25, 5); context.fill();
+  drawRoundedRect(context, 20, -2, 11, 25, 5); context.fill();
+  context.fillStyle = "#d8b38b";
+  context.beginPath(); context.arc(-26, 22, 6, 0, Math.PI * 2); context.fill();
+  context.beginPath(); context.arc(26, 22, 6, 0, Math.PI * 2); context.fill();
+
+  if (custom.outfit === "tunic") {
+    context.fillStyle = "#5c4328";
+    context.fillRect(-23, 10, 46, 6);
+    context.fillStyle = "#d5b85d";
+    context.fillRect(-3, 8, 6, 10);
+  } else if (custom.outfit === "armor") {
+    context.fillStyle = "rgba(214,220,224,.7)";
+    context.beginPath();
+    context.moveTo(-15, -5); context.lineTo(15, -5); context.lineTo(18, 17); context.lineTo(0, 24); context.lineTo(-18, 17); context.closePath();
+    context.fill();
+    context.strokeStyle = "rgba(55,62,68,.75)";
+    context.lineWidth = 2;
+    context.beginPath(); context.moveTo(0, -4); context.lineTo(0, 21); context.stroke();
+    context.beginPath(); context.moveTo(-13, 5); context.lineTo(13, 5); context.stroke();
+  }
+
+  context.fillStyle = "#d8b38b";
+  context.strokeStyle = "rgba(69,45,31,.7)";
+  context.lineWidth = 2;
+  context.beginPath(); context.arc(0, -25, 18, 0, Math.PI * 2); context.fill(); context.stroke();
+  context.fillStyle = "#2d211b";
+  context.beginPath(); context.arc(-6, -27, 2, 0, Math.PI * 2); context.fill();
+  context.beginPath(); context.arc(6, -27, 2, 0, Math.PI * 2); context.fill();
+  context.strokeStyle = "rgba(89,52,35,.75)";
+  context.lineWidth = 1.5;
+  context.beginPath(); context.arc(0, -20, 5, 0.15, Math.PI - 0.15); context.stroke();
+
+  if (custom.accessory === "hood") {
+    context.strokeStyle = shadeColor(custom.color, -38);
+    context.lineWidth = 8;
+    context.beginPath(); context.arc(0, -25, 21, Math.PI * .85, Math.PI * 2.15); context.stroke();
+  } else if (custom.accessory === "circlet") {
+    context.strokeStyle = "#e5c45f";
+    context.lineWidth = 3;
+    context.beginPath(); context.arc(0, -27, 18, Math.PI * 1.05, Math.PI * 1.95); context.stroke();
+  } else if (custom.accessory === "plume") {
+    context.fillStyle = "#d7d1c4";
+    context.beginPath();
+    context.moveTo(2, -43); context.quadraticCurveTo(18, -59, 12, -72); context.quadraticCurveTo(-1, -57, 2, -43); context.fill();
+    context.strokeStyle = "#5b4739"; context.lineWidth = 2;
+    context.beginPath(); context.moveTo(2, -43); context.lineTo(10, -66); context.stroke();
+  }
+
+  context.restore();
+}
+
+function updateRenderPositions(deltaSeconds) {
+  const blend = 1 - Math.exp(-10 * deltaSeconds);
+  for (const [id, render] of state.renderPositions) {
+    const player = state.players[id];
+    if (!player) continue;
+    render.x += (render.targetX - render.x) * blend;
+    render.y += (render.targetY - render.y) * blend;
+  }
+}
+
+function drawPlayers(context, phase) {
+  const now = Date.now();
+  for (const [id, player] of Object.entries(state.players)) {
+    const shouldDraw = phase === "lobby"
+      ? !player.isBot && player.connected
+      : player.inMatch;
+    if (!shouldDraw) continue;
+    const isMe = id === state.uid;
+    const render = state.renderPositions.get(id);
+    const x = isMe ? state.localPos.x : (render?.x ?? player.x);
+    const y = isMe ? state.localPos.y : (render?.y ?? player.y);
+    if (phase !== "lobby" && player.invisibleUntil > now && !isMe) continue;
+
+    context.save();
+    context.translate(x, y);
+    drawCourtier(context, player, isMe, player.alive, player.invisibleUntil > now && isMe ? 0.3 : 1);
+    context.fillStyle = "#ece5d1";
+    context.font = "700 13px system-ui";
+    context.textAlign = "center";
+    context.fillText(player.name || "Unknown", 0, -56);
+    if (!player.alive) {
+      context.fillStyle = "#d6d1c4";
+      context.font = "12px system-ui";
+      context.fillText("ghost", 0, 49);
+    }
+    context.restore();
+  }
+}
+
+function renderMapOverlay(now) {
+  if (state.mapVisibleUntil <= now || state.secret?.role !== "Advisor") {
+    setVisible("mapOverlay", false);
+    return;
+  }
+  setVisible("mapOverlay", true);
+  const sx = mapCanvas.width / WORLD_SIZE.width;
+  const sy = mapCanvas.height / WORLD_SIZE.height;
+  mapCtx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+  mapCtx.fillStyle = "#c7ae76";
+  mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+  mapCtx.strokeStyle = "#5c4529";
+  mapCtx.lineWidth = 3;
+  for (const corridor of CORRIDORS) {
+    mapCtx.strokeRect(corridor.x * sx, corridor.y * sy, corridor.w * sx, corridor.h * sy);
+  }
+  for (const room of ROOMS) {
+    mapCtx.fillStyle = "rgba(92,69,41,.14)";
+    mapCtx.fillRect(room.x * sx, room.y * sy, room.w * sx, room.h * sy);
+    mapCtx.strokeRect(room.x * sx, room.y * sy, room.w * sx, room.h * sy);
+    mapCtx.fillStyle = "#4a351e";
+    mapCtx.font = "700 11px Georgia";
+    mapCtx.textAlign = "center";
+    mapCtx.fillText(room.name, (room.x + room.w / 2) * sx, (room.y + 22) * sy);
+  }
+  for (const [id, player] of Object.entries(state.players)) {
+    if (!player.inMatch) continue;
+    mapCtx.fillStyle = player.alive ? (player.color || colorForId(id)) : "#6c6254";
+    mapCtx.beginPath();
+    mapCtx.arc(player.x * sx, player.y * sy, id === state.uid ? 8 : 6, 0, Math.PI * 2);
+    mapCtx.fill();
+    if (id === state.uid) {
+      mapCtx.strokeStyle = "#fff7d0";
+      mapCtx.lineWidth = 3;
+      mapCtx.stroke();
+    }
+  }
+}
+
+function updateCamera(worldWidth, worldHeight) {
+  const targetX = state.localPos.x - state.viewport.width / 2;
+  const targetY = state.localPos.y - state.viewport.height / 2;
+  state.camera.x += (clamp(targetX, 0, Math.max(0, worldWidth - state.viewport.width)) - state.camera.x) * 0.12;
+  state.camera.y += (clamp(targetY, 0, Math.max(0, worldHeight - state.viewport.height)) - state.camera.y) * 0.12;
+}
+
+function renderFrame(timestamp) {
+  const deltaMs = Math.min(50, timestamp - state.lastFrame);
+  const deltaSeconds = deltaMs / 1000;
+  state.lastFrame = timestamp;
+  updateMovement(deltaSeconds);
+  updateRenderPositions(deltaSeconds);
+  updateTaskHold(deltaMs);
+  updateInteractionPrompt();
+
+  const phase = currentPhase();
+  const world = phase === "lobby" ? LOBBY_SIZE : WORLD_SIZE;
+  updateCamera(world.width, world.height);
+  ctx.setTransform(state.viewport.dpr, 0, 0, state.viewport.dpr, 0, 0);
+  ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
+  ctx.save();
+  ctx.translate(-state.camera.x, -state.camera.y);
+  if (phase === "lobby") drawLobby(ctx);
+  else drawCastle(ctx);
+  drawPlayers(ctx, phase);
+  ctx.restore();
+
+  const now = Date.now();
+  if (now >= state.hudUpdateAt) {
+    updateHud(now);
+    state.hudUpdateAt = now + 350;
+  }
+  renderMeetingTimer(now);
+  renderMapOverlay(now);
+  requestAnimationFrame(renderFrame);
+}
+requestAnimationFrame(renderFrame);
+
+function renderMeetingTimer(now) {
+  if (currentPhase() !== "meeting" || !state.meeting) return;
+  const target = state.meeting.phase === "result" ? state.meeting.resumeAt : state.meeting.endsAt;
+  const remaining = Math.max(0, Math.ceil(((target || now) - now) / 1000));
+  $("meetingTimer").textContent = remaining;
+}
+
+// ------------------------------ BOT HOST ------------------------------
+
+function brainFor(id) {
+  if (!state.botBrains.has(id)) {
+    state.botBrains.set(id, {
+      targetKey: "",
+      path: [],
+      pathMadeAt: 0,
+      taskSince: 0,
+      voteAt: 0,
+      meetingSpoken: "",
+      nextAmbientAt: Date.now() + 45000 + Math.random() * 45000,
+      nextWanderAt: 0,
+      wanderTarget: null,
+    });
+  }
+  return state.botBrains.get(id);
+}
+
+function nearestWalkableCell(point, grid = 50) {
+  const cols = Math.ceil(WORLD_SIZE.width / grid);
+  const rows = Math.ceil(WORLD_SIZE.height / grid);
+  let best = null;
+  let bestDistance = Infinity;
+  for (let radius = 0; radius < 6 && !best; radius += 1) {
+    const cx = Math.round(point.x / grid);
+    const cy = Math.round(point.y / grid);
+    for (let ox = -radius; ox <= radius; ox += 1) {
+      for (let oy = -radius; oy <= radius; oy += 1) {
+        const x = clamp(cx + ox, 0, cols - 1);
+        const y = clamp(cy + oy, 0, rows - 1);
+        const px = x * grid + grid / 2;
+        const py = y * grid + grid / 2;
+        if (!isWalkable(px, py)) continue;
+        const d = Math.hypot(px - point.x, py - point.y);
+        if (d < bestDistance) {
+          bestDistance = d;
+          best = { x, y, px, py };
+        }
+      }
+    }
+  }
+  return best;
+}
+
+function findPath(start, target, grid = 50) {
+  const startCell = nearestWalkableCell(start, grid);
+  const endCell = nearestWalkableCell(target, grid);
+  if (!startCell || !endCell) return [target];
+  const cols = Math.ceil(WORLD_SIZE.width / grid);
+  const rows = Math.ceil(WORLD_SIZE.height / grid);
+  const key = (x, y) => `${x},${y}`;
+  const open = [startCell];
+  const cameFrom = new Map();
+  const gScore = new Map([[key(startCell.x, startCell.y), 0]]);
+  const fScore = new Map([[key(startCell.x, startCell.y), Math.abs(startCell.x - endCell.x) + Math.abs(startCell.y - endCell.y)]]);
+  const closed = new Set();
+
+  while (open.length) {
+    open.sort((a, b) => (fScore.get(key(a.x, a.y)) || Infinity) - (fScore.get(key(b.x, b.y)) || Infinity));
+    const current = open.shift();
+    const currentKey = key(current.x, current.y);
+    if (current.x === endCell.x && current.y === endCell.y) {
+      const cells = [current];
+      let cursor = currentKey;
+      while (cameFrom.has(cursor)) {
+        const previous = cameFrom.get(cursor);
+        cells.push(previous);
+        cursor = key(previous.x, previous.y);
+      }
+      cells.reverse();
+      return [...cells.map((cell) => ({ x: cell.x * grid + grid / 2, y: cell.y * grid + grid / 2 })), target];
+    }
+    closed.add(currentKey);
+    const neighbors = [[1,0],[-1,0],[0,1],[0,-1]];
+    for (const [dx, dy] of neighbors) {
+      const nx = current.x + dx;
+      const ny = current.y + dy;
+      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+      const px = nx * grid + grid / 2;
+      const py = ny * grid + grid / 2;
+      if (!isWalkable(px, py)) continue;
+      const neighborKey = key(nx, ny);
+      if (closed.has(neighborKey)) continue;
+      const tentative = (gScore.get(currentKey) || 0) + 1;
+      if (tentative < (gScore.get(neighborKey) ?? Infinity)) {
+        cameFrom.set(neighborKey, current);
+        gScore.set(neighborKey, tentative);
+        fScore.set(neighborKey, tentative + Math.abs(nx - endCell.x) + Math.abs(ny - endCell.y));
+        if (!open.some((cell) => cell.x === nx && cell.y === ny)) open.push({ x: nx, y: ny });
+      }
+    }
+  }
+  return [target];
+}
+
+function moveBotToward(id, player, target, speed = 125) {
+  const brain = brainFor(id);
+  const now = Date.now();
+  const elapsed = clamp((now - (brain.lastMoveAt || now - 320)) / 1000, 0.08, 0.48);
+  brain.lastMoveAt = now;
+  const targetKey = `${Math.round(target.x / 20)},${Math.round(target.y / 20)}`;
+  if (brain.targetKey !== targetKey || !brain.path.length || now - brain.pathMadeAt > 4500) {
+    brain.targetKey = targetKey;
+    brain.path = findPath(player, target);
+    brain.pathMadeAt = now;
+  }
+  while (brain.path.length && distance(player, brain.path[0]) < 34) brain.path.shift();
+  const waypoint = brain.path[0] || target;
+  const dx = waypoint.x - player.x;
+  const dy = waypoint.y - player.y;
+  const length = Math.hypot(dx, dy) || 1;
+  const step = speed * elapsed;
+  const next = {
+    x: player.x + (dx / length) * Math.min(step, length),
+    y: player.y + (dy / length) * Math.min(step, length),
+  };
+  if (isWalkable(next.x, next.y)) return next;
+  brain.path = [];
+  return { x: player.x, y: player.y };
+}
+
+function chooseBotTask(id, player, secret) {
+  const remaining = (secret?.tasks || [])
+    .filter((assignmentId) => !player.completedTasks?.[assignmentId])
+    .map((assignmentId) => {
+      const task = taskDefinitionFor(assignmentId);
+      return task ? { ...task, assignmentId } : null;
+    })
+    .filter(Boolean);
+  if (!remaining.length) return null;
+  return remaining.sort((a, b) => distance(player, a) - distance(player, b))[0];
+}
+
+function chooseWanderTarget(id) {
+  const brain = brainFor(id);
+  const now = Date.now();
+  if (!brain.wanderTarget || now >= brain.nextWanderAt || distance(state.players[id], brain.wanderTarget) < 45) {
+    const room = ROOMS[Math.floor(Math.random() * ROOMS.length)];
+    brain.wanderTarget = {
+      x: room.x + 60 + Math.random() * (room.w - 120),
+      y: room.y + 60 + Math.random() * (room.h - 120),
+    };
+    brain.nextWanderAt = now + 5000 + Math.random() * 7000;
+  }
+  return brain.wanderTarget;
+}
+
+async function hostBotTick() {
+  if (!isHost() || state.hostTickBusy) return;
+  state.hostTickBusy = true;
+  try {
+    const phase = currentPhase();
+    if (phase === "game") {
+      await ensureTaskAssignments();
+      await runBotsInGame();
+      await checkWinConditions();
+    } else if (phase === "meeting") {
+      await processMeetingHost();
+    }
+  } catch (error) {
+    console.warn("Host bot tick failed", error);
+  } finally {
+    state.hostTickBusy = false;
+  }
+}
+setInterval(hostBotTick, 320);
+
+async function runBotsInGame() {
+  const updates = {};
+  const now = Date.now();
+  const bots = activePlayers().filter((player) => player.isBot && player.alive);
+
+  for (const bot of bots) {
+    const secret = state.allSecrets[bot.id];
+    if (!secret?.role) continue;
+    const role = secret.role;
+    const brain = brainFor(bot.id);
+    let target = null;
+
+    const nearbyUnreported = nearestBody(bot, 64, false);
+    if (nearbyUnreported && Math.random() < 0.28) {
+      await initiateMeeting(`${bot.name} reported ${nearbyUnreported.victimName}'s body.`, nearbyUnreported.id, bot.id);
+      return;
+    }
+
+    if (role === "Chef" && !bot.reviveUsed) {
+      const bodies = Object.entries(state.bodies)
+        .map(([id, body]) => ({ id, ...body }))
+        .filter((body) => state.players[body.victimId]?.deathCause === "chameleon")
+        .sort((a, b) => distance(bot, a) - distance(bot, b));
+      if (bodies[0]) {
+        target = bodies[0];
+        if (distance(bot, target) < 58) {
+          const body = target;
+          updates[roomPath(`players/${body.victimId}/alive`)] = true;
+          updates[roomPath(`players/${body.victimId}/deathCause`)] = null;
+          updates[roomPath(`players/${body.victimId}/x`)] = body.x;
+          updates[roomPath(`players/${body.victimId}/y`)] = body.y;
+          updates[roomPath(`players/${bot.id}/reviveUsed`)] = true;
+          updates[roomPath(`bodies/${body.id}`)] = null;
+          sendMessage(`${bot.name} revived ${body.victimName}.`, { system: true, sender: "Castle Herald", uid: "system" });
+          continue;
+        }
+      }
+    }
+
+    if (role === "Chameleon") {
+      const possible = alivePlayers().filter((player) => player.id !== bot.id);
+      possible.sort((a, b) => distance(bot, a) - distance(bot, b));
+      target = possible[0] || chooseWanderTarget(bot.id);
+      if (target?.id && distance(bot, target) < 56 && (bot.killReadyAt || 0) <= now && Math.random() < 0.72) {
+        await performKill(bot.id);
+        continue;
+      }
+      if ((bot.invisReadyAt || 0) <= now && Math.random() < 0.055) {
+        updates[roomPath(`players/${bot.id}/invisibleUntil`)] = now + 5000;
+        updates[roomPath(`players/${bot.id}/invisReadyAt`)] = now + 20000;
+      }
+    } else if (TASKER_ROLES.has(role)) {
+      const task = chooseBotTask(bot.id, bot, secret);
+      if (task) {
+        target = task;
+        if (distance(bot, task) < 46) {
+          if (!brain.taskSince) brain.taskSince = now;
+          if (now - brain.taskSince > 1200) {
+            updates[roomPath(`players/${bot.id}/completedTasks/${task.assignmentId}`)] = true;
+            brain.taskSince = 0;
+            brain.path = [];
+            continue;
+          }
+        } else {
+          brain.taskSince = 0;
+        }
+      }
+    }
+
+    if (role === "Advisor" && (bot.mapReadyAt || 0) <= now && Math.random() < 0.04) {
+      updates[roomPath(`players/${bot.id}/mapReadyAt`)] = now + 20000;
+    }
+
+    if (!target) target = chooseWanderTarget(bot.id);
+
+    if (SEWER_ROLES.has(role)) {
+      const grate = nearestSewer(bot);
+      if (grate && Math.random() < 0.045) {
+        const destinations = sewerDestinationsFor(grate);
+        const destination = destinations[Math.floor(Math.random() * destinations.length)];
+        if (destination) {
+          updates[roomPath(`players/${bot.id}/x`)] = destination.x;
+          updates[roomPath(`players/${bot.id}/y`)] = destination.y - 30;
+          brain.path = [];
+          continue;
+        }
+      }
+    }
+
+    if (distance(bot, LEVER) < 60 && now - (state.meta?.lastMeetingAt || 0) > 45000 && Math.random() < 0.008) {
+      await initiateMeeting(`${bot.name} pulled the emergency council lever.`, null, bot.id);
+      return;
+    }
+
+    const next = moveBotToward(bot.id, bot, target, role === "Chameleon" ? 145 : 120);
+    updates[roomPath(`players/${bot.id}/x`)] = next.x;
+    updates[roomPath(`players/${bot.id}/y`)] = next.y;
+    updates[roomPath(`players/${bot.id}/lastSeen`)] = now;
+
+    if (now >= brain.nextAmbientAt && now - state.lastBotChatAt >= 18000 && Math.random() < 0.12) {
+      brain.nextAmbientAt = now + 90000 + Math.random() * 90000;
+      state.lastBotChatAt = now;
+      const lines = [
+        "I am checking the west wing.",
+        "The castle feels unusually quiet.",
+        "I still have royal duties to finish.",
+        "Has anyone seen something suspicious?",
+        "Meet me near the Great Hall.",
+        "I heard footsteps by the old chapel.",
+      ];
+      sendMessage(lines[Math.floor(Math.random() * lines.length)], { uid: bot.id, sender: bot.name, bot: true });
+    }
+  }
+
+  if (Object.keys(updates).length) await update(ref(db), updates);
+}
+
+async function runBotMeetingActions() {
+  const meeting = state.meeting;
+  if (!meeting || meeting.phase !== "voting") return;
+  const now = Date.now();
+  const bots = activePlayers().filter((player) => player.isBot && player.alive);
+  const updates = {};
+  let meetingChatCount = bots.filter((bot) => brainFor(bot.id).meetingSpoken === meeting.id).length;
+
+  for (const bot of bots) {
+    const brain = brainFor(bot.id);
+    if (meetingChatCount < 2 && brain.meetingSpoken !== meeting.id && now - meeting.createdAt > 4500 + Math.random() * 7000 && Math.random() < 0.08) {
+      brain.meetingSpoken = meeting.id;
+      meetingChatCount += 1;
+      const lines = [
+        "Where was the body found?",
+        "I was doing a duty in another room.",
+        "Someone used the corridor right before the meeting.",
+        "I do not have enough proof yet.",
+        "Watch who changes their story.",
+        "I saw movement near a sewer grate.",
+      ];
+      sendMessage(lines[Math.floor(Math.random() * lines.length)], { uid: bot.id, sender: bot.name, bot: true });
+    }
+
+    if (!brain.voteAt || brain.voteMeeting !== meeting.id) {
+      brain.voteMeeting = meeting.id;
+      brain.voteAt = meeting.createdAt + 4500 + Math.random() * 13000;
+    }
+    if (!meeting.votes?.[bot.id] && meeting.mutedPlayerId !== bot.id && now >= brain.voteAt) {
+      const candidates = alivePlayers().filter((player) => player.id !== bot.id);
+      if (Math.random() < 0.2) {
+        updates[roomPath(`meeting/votes/${bot.id}`)] = ABSTAIN_VOTE;
+      } else if (candidates.length) {
+        const candidate = candidates[Math.floor(Math.random() * candidates.length)];
+        updates[roomPath(`meeting/votes/${bot.id}`)] = candidate.id;
+      }
+    }
+
+    if (state.allSecrets[bot.id]?.role === "King" && !meeting.decreeBy && now - meeting.createdAt > 2800) {
+      const candidates = alivePlayers().filter((player) => player.id !== bot.id);
+      if (candidates.length) {
+        const target = candidates[Math.floor(Math.random() * candidates.length)];
+        updates[roomPath("meeting/mutedPlayerId")] = target.id;
+        updates[roomPath("meeting/decreeBy")] = bot.id;
+        updates[roomPath(`meeting/votes/${target.id}`)] = null;
+        sendMessage(`${bot.name} issued a Royal Decree: ${target.name} may not vote.`, {
+          system: true,
+          sender: "Castle Herald",
+          uid: "system",
+        });
+      }
+    }
+  }
+
+  if (Object.keys(updates).length) await update(ref(db), updates);
+}
+
+// Keep a lightweight presence heartbeat for human players.
+setInterval(() => {
+  if (!state.joined || !state.uid) return;
+  update(ref(db, roomPath(`players/${state.uid}`)), {
+    connected: true,
+    lastSeen: serverTimestamp(),
+  }).catch(() => {});
+}, 15000);
+
+  </script>
 </body>
 </html>
