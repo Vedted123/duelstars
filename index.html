@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#08080d" />
-  <title>Traitor Game</title>
+  <title>Traitor Game — Improved Bots & Tasks</title>
   <style>
 :root {
   color-scheme: dark;
@@ -214,6 +214,12 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .sewer-arrow-layer { position: absolute; inset: 0; }
 .sewer-arrow { --angle: 0rad; position: absolute; width: 158px; min-height: 76px; transform: translate(-50%, -50%); display: grid; grid-template-rows: 34px auto; place-items: center; gap: 3px; padding: 8px 10px; color: var(--ink); background: rgba(12,26,28,.94); border: 1px solid rgba(109,210,190,.48); box-shadow: 0 15px 40px rgba(0,0,0,.42); }
 .sewer-arrow:hover { border-color: #9df0db; }
+button.sewer-arrow:hover:not(:disabled),
+button.sewer-arrow:active:not(:disabled),
+button.shoot-target:hover:not(:disabled),
+button.shoot-target:active:not(:disabled) {
+  transform: translate(-50%, -50%);
+}
 .sewer-arrow-symbol { display: block; color: #9df0db; font-size: 31px; line-height: 1; transform: rotate(var(--angle)); filter: drop-shadow(0 0 8px rgba(109,210,190,.4)); }
 .sewer-arrow-label { font-size: 11px; line-height: 1.15; }
 .sewer-close { position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%); min-width: 130px; }
@@ -299,6 +305,27 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .sort-bin { min-height: 86px; padding: 8px 4px; display: grid; place-items: center; gap: 4px; background: rgba(255,255,255,.07); border: 2px dashed rgba(255,255,255,.2); font-size: 24px; }
 .sort-bin small { color: var(--muted); font-size: 10px; }
 .sort-bin.ready { border-color: var(--gold); background: rgba(240,201,75,.11); }
+.rune-sort-game { width: 100%; display: grid; gap: 16px; }
+.rune-sort-pile {
+  min-height: 190px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 14px;
+  background: radial-gradient(circle at center, rgba(112,80,154,.18), rgba(255,255,255,.035));
+  border: 1px solid rgba(190,157,238,.2);
+}
+.rune-token { width: 48px; height: 48px; padding: 0; font-size: 25px; background: rgba(255,255,255,.09); border: 2px solid rgba(206,181,245,.18); }
+.rune-token.selected { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(240,201,75,.18); }
+.rune-sort-bins { display: grid; grid-template-columns: repeat(5, minmax(64px, 1fr)); gap: 8px; }
+.rune-sort-bin { min-height: 112px; padding: 8px 5px; display: grid; grid-template-rows: auto 1fr auto; place-items: center; gap: 5px; background: rgba(255,255,255,.055); border: 2px dashed rgba(206,181,245,.24); }
+.rune-sort-bin.ready { border-color: var(--gold); background: rgba(240,201,75,.08); }
+.rune-sort-bin > strong { font-size: 27px; }
+.rune-bin-contents { min-height: 34px; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 2px; color: var(--gold-2); font-size: 16px; }
+.rune-sort-bin small { color: var(--muted); font-size: 10px; }
 
 .wire-board { width: min(540px, 86vw); display: grid; gap: 9px; }
 .wire-canvas { width: 100%; height: auto; border-radius: 13px; background: #131722; border: 2px solid rgba(255,255,255,.14); touch-action: none; cursor: crosshair; }
@@ -310,7 +337,7 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .draw-actions button { min-height: 48px; }
 
 @media (max-width: 620px) {
-  .sort-bins { grid-template-columns: repeat(3, 1fr); }
+  .sort-bins, .rune-sort-bins { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 760px) {
@@ -667,21 +694,17 @@ const OUTFITS = ["tunic", "cloak", "armor"];
 const ACCESSORIES = ["none", "hood", "circlet", "plume"];
 const OUTFIT_LABELS = { tunic: "Tunic", cloak: "Cloak", armor: "Light armor" };
 const ACCESSORY_LABELS = { none: "None", hood: "Hood", circlet: "Circlet", plume: "Plume" };
-const BOT_WORDS_ONE = [
-  "apple", "amber", "brave", "cinder", "cloud", "crystal", "ember", "frost",
-  "gold", "hollow", "iron", "jade", "lunar", "misty", "night", "royal",
-  "scarlet", "shadow", "silver", "storm", "thorn", "velvet", "wild", "winter",
-];
-const BOT_WORDS_TWO = [
-  "banana", "badger", "castle", "crow", "dragon", "falcon", "fox", "goblin",
-  "griffin", "hawk", "keeper", "knight", "lantern", "lion", "mango", "otter",
-  "panda", "raven", "river", "shield", "sparrow", "tiger", "wolf", "wizard",
+const BOT_NAMES = [
+  "Milo", "Riley", "Nova", "Kai", "Maya", "Theo", "Juno", "Finn",
+  "Skye", "Nico", "Ivy", "Leo", "Remy", "Tess", "Arlo", "Zane",
+  "Quinn", "Lena", "Ash", "Koda", "Drew", "Mira", "Ezra", "Sage",
+  "Axel", "Noah", "Luca", "Jett", "Rook", "Vera", "Owen", "Nina",
 ];
 
 function botNameFor(id, index) {
-  const firstIndex = (hashNumber(id) + index * 7) % BOT_WORDS_ONE.length;
-  const secondIndex = (hashNumber(`${id}:second`) + index * 11) % BOT_WORDS_TWO.length;
-  return `PZ${BOT_WORDS_ONE[firstIndex]}${BOT_WORDS_TWO[secondIndex]}`;
+  const roomSeed = String(id).replace(/_\d+$/, "");
+  const start = hashNumber(roomSeed) % BOT_NAMES.length;
+  return BOT_NAMES[(start + index * 7) % BOT_NAMES.length];
 }
 
 const ROOMS = [
@@ -725,7 +748,7 @@ const CORRIDORS = [
 const TASKS = [
   { id: "stoke_oven", name: "Stoke the royal oven", icon: "🔥", room: "kitchen", x: 205, y: 190 },
   { id: "knead_bread", name: "Sort the kitchen provisions", icon: "🧺", room: "kitchen", x: 430, y: 280 },
-  { id: "polish_crown", name: "Memorize the crown sigils", icon: "👑", room: "throne", x: 950, y: 155 },
+  { id: "polish_crown", name: "Sort the crown runes", icon: "👑", room: "throne", x: 950, y: 155 },
   { id: "align_banners", name: "Align the royal banners", icon: "⚑", room: "throne", x: 1080, y: 245 },
   { id: "stack_scrolls", name: "Dust the ancient scrolls", icon: "🧹", room: "library", x: 1470, y: 180 },
   { id: "decode_runes", name: "Decode the moon runes", icon: "✦", room: "library", x: 1690, y: 285 },
@@ -738,7 +761,7 @@ const TASKS = [
   { id: "turn_winch", name: "Shoot the dungeon pests", icon: "🎯", room: "dungeon", x: 215, y: 960 },
   { id: "lock_cells", name: "Sketch the cell key", icon: "🗝", room: "dungeon", x: 445, y: 1040 },
   { id: "mix_tonic", name: "Sketch a potion bottle", icon: "⚗", room: "alchemy", x: 845, y: 960 },
-  { id: "sort_herbs", name: "Sort the sorcerer's herbs", icon: "🌿", room: "alchemy", x: 1060, y: 1050 },
+  { id: "sort_herbs", name: "Sort the sorcerer's runes", icon: "🌿", room: "alchemy", x: 1060, y: 1050 },
   { id: "draw_water", name: "Shoot the garden pests", icon: "🎯", room: "courtyard", x: 1480, y: 970 },
   { id: "trim_hedges", name: "Clean the garden debris", icon: "🧹", room: "courtyard", x: 1700, y: 1040 },
 ];
@@ -801,7 +824,7 @@ const TASK_GAME_TYPES = {
   // 2 / 18 — visible rune order
   decode_runes: "sequence",
   align_banners: "sequence",
-  // 2 / 18 — hidden rune order
+  // 2 / 18 — five-rune sorting pile
   sort_herbs: "memory",
   polish_crown: "memory",
   // 2 / 18 — clean dust
@@ -2084,7 +2107,7 @@ function renderCurrentTaskGame() {
   if (!game) return;
   clearTaskGameTimer();
   if (game.type === "shield") renderShieldPuzzle();
-  else if (game.type === "memory") renderMemoryPuzzle();
+  else if (game.type === "memory") renderRuneSortPuzzle();
   else if (game.type === "timing") renderTimingPuzzle();
   else if (game.type === "wire") renderWirePuzzle();
   else if (game.type === "sweep") renderSweepPuzzle();
@@ -2214,53 +2237,119 @@ function renderShieldPuzzle() {
   area.appendChild(grid);
 }
 
-function renderMemoryPuzzle() {
+function renderRuneSortPuzzle() {
   clearTaskGameTimer();
   const game = state.taskGame;
   const area = $("taskGameArea");
   area.replaceChildren();
-  const tileSymbols = shuffle(PUZZLE_SYMBOLS.slice(0, 6));
-  game.memoryTiles = tileSymbols.map((symbol, index) => ({ symbol, index }));
-  game.solution = shuffle(tileSymbols).slice(0, 4);
-  game.progress = 0;
-  game.previewing = true;
-  $("taskGameInstruction").textContent = `Memorize the hidden positions in this order: ${game.solution.join(" → ")}`;
-  setTaskGameStatus("The rune tiles will hide in 2.5 seconds");
-  const grid = document.createElement("div");
-  grid.className = "puzzle-button-grid";
-  for (const tile of game.memoryTiles) {
-    const button = makePuzzleButton(tile.symbol, () => {
-      if (game.previewing || !state.taskGame) return;
-      if (tile.symbol === game.solution[game.progress]) {
-        game.progress += 1;
-        button.classList.add("correct");
-        button.textContent = tile.symbol;
-        button.disabled = true;
-        setTaskGameStatus(`${game.progress} / ${game.solution.length} hidden runes remembered`);
-        if (game.progress >= game.solution.length) finishTaskPuzzle();
-      } else {
-        setTaskGameStatus("Wrong hidden tile — memorize a new layout");
-        state.taskGameTimer = setTimeout(() => {
-          if (state.taskGame === game) renderMemoryPuzzle();
-        }, 650);
-      }
-    });
-    button.disabled = true;
-    grid.appendChild(button);
-  }
-  area.appendChild(grid);
-  state.taskGameTimer = setTimeout(() => {
-    if (state.taskGame !== game) return;
-    game.previewing = false;
-    $("taskGameInstruction").textContent = "Tap the hidden rune positions in the memorized order.";
-    setTaskGameStatus("");
-    for (const button of grid.children) {
-      button.textContent = "?";
-      button.disabled = false;
-    }
-  }, 2500);
-}
 
+  const runeTypes = shuffle(["☀", "☾", "✦", "◆", "♜"]);
+  const copiesPerRune = 4;
+  game.runeItems = shuffle(runeTypes.flatMap((rune, runeIndex) =>
+    Array.from({ length: copiesPerRune }, (_, copyIndex) => ({
+      id: `rune_${runeIndex}_${copyIndex}_${Math.random().toString(36).slice(2, 7)}`,
+      rune,
+      sorted: false,
+    }))
+  ));
+  game.selectedRuneItemId = "";
+  game.sortedRuneCount = 0;
+
+  $("taskGameInstruction").textContent = "Sort the five mixed rune types into their matching boxes. Drag a rune, or tap it and then tap a box.";
+  setTaskGameStatus(`0 / ${game.runeItems.length} runes sorted`);
+
+  const wrap = document.createElement("div");
+  wrap.className = "rune-sort-game";
+  const pile = document.createElement("div");
+  pile.className = "rune-sort-pile";
+  const bins = document.createElement("div");
+  bins.className = "rune-sort-bins";
+  const itemButtons = new Map();
+  const binViews = new Map();
+
+  const refreshSelection = () => {
+    for (const [id, button] of itemButtons) {
+      button.classList.toggle("selected", id === game.selectedRuneItemId);
+    }
+    for (const bin of bins.children) {
+      bin.classList.toggle("ready", Boolean(game.selectedRuneItemId));
+    }
+  };
+
+  const placeRune = (itemId, targetRune) => {
+    const item = game.runeItems.find((candidate) => candidate.id === itemId && !candidate.sorted);
+    if (!item) return;
+    if (item.rune !== targetRune) {
+      setTaskGameStatus("That rune belongs in a different box");
+      game.selectedRuneItemId = "";
+      refreshSelection();
+      return;
+    }
+
+    item.sorted = true;
+    itemButtons.get(item.id)?.remove();
+    itemButtons.delete(item.id);
+    game.selectedRuneItemId = "";
+    game.sortedRuneCount += 1;
+
+    const view = binViews.get(targetRune);
+    if (view) {
+      const placed = document.createElement("span");
+      placed.textContent = targetRune;
+      view.contents.appendChild(placed);
+      view.count.textContent = `${view.contents.children.length} / ${copiesPerRune}`;
+    }
+
+    setTaskGameStatus(`${game.sortedRuneCount} / ${game.runeItems.length} runes sorted`);
+    refreshSelection();
+    if (game.sortedRuneCount >= game.runeItems.length) finishTaskPuzzle();
+  };
+
+  for (const item of game.runeItems) {
+    const button = document.createElement("button");
+    button.className = "rune-token";
+    button.textContent = item.rune;
+    button.draggable = true;
+    button.setAttribute("aria-label", `Rune ${item.rune}`);
+    button.addEventListener("click", () => {
+      game.selectedRuneItemId = game.selectedRuneItemId === item.id ? "" : item.id;
+      refreshSelection();
+    });
+    button.addEventListener("dragstart", (event) => {
+      game.selectedRuneItemId = item.id;
+      event.dataTransfer?.setData("text/plain", item.id);
+      refreshSelection();
+    });
+    itemButtons.set(item.id, button);
+    pile.appendChild(button);
+  }
+
+  for (const rune of shuffle(runeTypes)) {
+    const bin = document.createElement("button");
+    bin.className = "rune-sort-bin";
+    bin.type = "button";
+    const label = document.createElement("strong");
+    label.textContent = rune;
+    const contents = document.createElement("span");
+    contents.className = "rune-bin-contents";
+    const count = document.createElement("small");
+    count.textContent = `0 / ${copiesPerRune}`;
+    bin.append(label, contents, count);
+    binViews.set(rune, { contents, count });
+    bin.addEventListener("click", () => {
+      if (game.selectedRuneItemId) placeRune(game.selectedRuneItemId, rune);
+    });
+    bin.addEventListener("dragover", (event) => event.preventDefault());
+    bin.addEventListener("drop", (event) => {
+      event.preventDefault();
+      placeRune(event.dataTransfer?.getData("text/plain") || game.selectedRuneItemId, rune);
+    });
+    bins.appendChild(bin);
+  }
+
+  wrap.append(pile, bins);
+  area.appendChild(wrap);
+}
 function renderTimingPuzzle() {
   const game = state.taskGame;
   const area = $("taskGameArea");
@@ -2554,7 +2643,7 @@ function renderShootPuzzle() {
   const board = document.createElement("div");
   board.className = "shoot-board";
   area.appendChild(board);
-  const icons = ["🎯", "🐀", "🦇", "⚙", "💎"];
+  const icons = ["🐀", "🦇", "🪳", "🐛"];
 
   const clearTargets = () => {
     for (const target of game.shootTargets.values()) target.button.remove();
@@ -3241,7 +3330,7 @@ async function performKill(killerId = state.uid, preferredTargetId = "") {
   const victim = nearestLivingTarget(killerId, 58, preferredTargetId);
   if (!victim) {
     if (killerId === state.uid) showToast("No player is close enough");
-    return;
+    return false;
   }
   const bodyId = randomId("body");
   const witnesses = {};
@@ -3284,6 +3373,7 @@ async function performKill(killerId = state.uid, preferredTargetId = "") {
   };
   await update(ref(db), updates);
   if (killerId === state.uid) showToast("The Chameleon strikes");
+  return true;
 }
 
 async function useInvisibility() {
@@ -5001,6 +5091,14 @@ function brainFor(id) {
       lastProgressAt: Date.now(),
       lastPosition: null,
       personality: personalities[hashNumber(id) % personalities.length],
+      moveSpeed: 102 + (hashNumber(`${id}:speed`) % 22),
+      taskSolveMs: 3400 + (hashNumber(`${id}:task`) % 3200),
+      pauseUntil: 0,
+      nextDecisionAt: Date.now() + 500 + Math.random() * 900,
+      killTargetId: "",
+      killOpportunitySince: 0,
+      escapeUntil: 0,
+      escapeTarget: null,
       suspicion: {},
       evidence: [],
       observedBodies: {},
@@ -5144,47 +5242,79 @@ function playerMentionedInText(text, excludedId = "") {
     .find((player) => lower.includes(player.name.toLowerCase())) || null;
 }
 
+function pickBotLine(bot, lines) {
+  const brain = brainFor(bot.id);
+  const offset = brain.personality === "bold" ? 1 : brain.personality === "cautious" ? 2 : 0;
+  return lines[(hashNumber(`${bot.id}:${Date.now() >> 12}`) + offset) % lines.length];
+}
+
 function evidenceReplyFor(bot) {
   const role = state.allSecrets[bot.id]?.role;
   const brain = brainFor(bot.id);
+
   if (role === "Chameleon") {
     const scapegoat = alivePlayers()
       .filter((player) => player.id !== bot.id)
       .sort((a, b) => Object.keys(a.completedTasks || {}).length - Object.keys(b.completedTasks || {}).length)[0];
     return scapegoat
-      ? `I did not see the actual kill, but ${scapegoat.name} has been moving strangely.`
-      : "I do not have enough evidence yet.";
+      ? pickBotLine(bot, [
+          `didn't see the kill. ${scapegoat.name} was moving kind of weird though`,
+          `no hard proof. i'd watch ${scapegoat.name}`,
+          `i missed it. ${scapegoat.name}'s route looked off to me`,
+        ])
+      : "didn't see it";
   }
 
   const eyewitness = recentEyewitnessEvidence(bot.id);
   if (eyewitness) {
-    const killerName = state.players[eyewitness.killerId]?.name || "the Chameleon";
-    return `I saw ${killerName} kill ${eyewitness.victimName} in ${eyewitness.roomName}. I am certain.`;
+    const killerName = state.players[eyewitness.killerId]?.name || "the killer";
+    return pickBotLine(bot, [
+      `I saw ${killerName} kill ${eyewitness.victimName} in ${eyewitness.roomName}. vote ${killerName}`,
+      `${killerName} killed ${eyewitness.victimName} in ${eyewitness.roomName}. I watched it happen`,
+      `it's ${killerName}. saw the kill in ${eyewitness.roomName}`,
+    ]);
   }
+
   const ranked = strongestSuspectForBot(bot.id);
   if (ranked && ranked.score >= BOT_HIGH_SUSPICION) {
     const evidence = [...brain.evidence].reverse().find((item) => item.suspectId === ranked.player.id);
-    return `My strongest suspect is ${ranked.player.name}${evidence?.reason ? ` because they ${evidence.reason}` : " based on their movement"}.`;
+    if (evidence?.reason?.includes("near")) {
+      return `${ranked.player.name} was close to the body. not enough to hard vote yet`;
+    }
+    return pickBotLine(bot, [
+      `${ranked.player.name} is my main sus, but I didn't see a kill`,
+      `leaning ${ranked.player.name}. no direct proof though`,
+      `watch ${ranked.player.name}. their path didn't make sense`,
+    ]);
   }
+
   const hiddenKill = [...brain.evidence].reverse().find((item) => item.reason?.includes("attacker was invisible"));
-  if (hiddenKill) return "I saw a player fall, but the attacker was invisible, so I cannot identify them.";
-  if (ranked?.player) return `My current guess is ${ranked.player.name}, but my confidence is low and I have no direct proof yet.`;
-  return "I have no reliable evidence yet. I would rather watch and avoid a random accusation.";
+  if (hiddenKill) return "I saw the body drop, but the killer was invisible";
+  return pickBotLine(bot, [
+    "didn't see enough. skip is safer",
+    "no clue yet",
+    "I don't have anything solid",
+    "no proof from me",
+  ]);
 }
 
 function botStatusReply(bot) {
   const brain = brainFor(bot.id);
   const role = state.allSecrets[bot.id]?.role;
-  const roomName = locationNameFor(bot);
+  const roomName = locationNameFor(bot).replace(/^Castle /, "");
   if (brain.followTargetId && brain.followUntil > Date.now()) {
     const target = state.players[brain.followTargetId];
-    if (target?.alive) return `I am staying with ${target.name} near ${roomName}.`;
+    if (target?.alive) return `with ${target.name} near ${roomName}`;
   }
-  if (role === "Chameleon") return `I am checking ${roomName} and watching the nearby routes.`;
+  if (role === "Chameleon") return pickBotLine(bot, [`in ${roomName}`, `checking ${roomName}`, `${roomName} rn`]);
   const task = TASKER_ROLES.has(role) ? chooseBotTask(bot.id, bot, state.allSecrets[bot.id]) : null;
   return task
-    ? `I am in ${roomName}, heading toward ${task.name.toLowerCase()}.`
-    : `I am in ${roomName}, watching for suspicious movement.`;
+    ? pickBotLine(bot, [
+        `${roomName} rn, doing ${task.name.toLowerCase()}`,
+        `heading to ${task.name.toLowerCase()}`,
+        `on tasks near ${roomName}`,
+      ])
+    : pickBotLine(bot, [`in ${roomName}`, `${roomName} rn`, `walking through ${roomName}`]);
 }
 
 function buildBotChatReply(bot, message) {
@@ -5195,66 +5325,68 @@ function buildBotChatReply(bot, message) {
   const sender = state.players[message.uid];
   const mentionedPlayer = playerMentionedInText(text, bot.id);
 
-  if (/\b(hi|hey|hello|yo)\b/.test(lower)) {
-    return `Hello${sender?.name ? `, ${sender.name}` : ""}. I am watching the castle and remembering what I see.`;
-  }
   if (/\b(are you a bot|you are a bot|r u a bot)\b/.test(lower)) {
-    return "I am an AI courtier. I can remember witnesses, answer questions, follow players, and vote from evidence.";
+    return pickBotLine(bot, ["why does everyone ask that", "I'm just playing", "maybe. what did you see?"]);
+  }
+  if (/\b(hi|hey|hello|yo)\b/.test(lower)) {
+    return pickBotLine(bot, ["yo", "hey", "sup", "what's up"]);
   }
   if (/\b(where are you|where r u|what room|location)\b/.test(lower)) return botStatusReply(bot);
   if (/\b(what are you doing|what r u doing|your task|doing what)\b/.test(lower)) return botStatusReply(bot);
 
   if (/\b(follow me|come with me|stay with me|stick with me)\b/.test(lower) && sender?.alive) {
     brain.followTargetId = message.uid;
-    brain.followUntil = Date.now() + 28000;
-    return `Okay, ${sender.name}. I will follow you for a while and watch anyone who approaches.`;
+    brain.followUntil = Date.now() + 30000;
+    return pickBotLine(bot, ["yeah lead", "ok I'm with you", "sure, go"]);
   }
 
   if (/\b(stop following|leave me|go away)\b/.test(lower) && brain.followTargetId === message.uid) {
     brain.followTargetId = "";
     brain.followUntil = 0;
-    return "Understood. I will return to my own route.";
+    return pickBotLine(bot, ["alr", "got it", "ok"]);
+  }
+
+  const isAccusation = mentionedPlayer && /\b(sus|suspicious|killed|killer|vote|watch)\b/.test(lower);
+  if (isAccusation && mentionedPlayer.id !== bot.id) {
+    if (role !== "Chameleon") {
+      rememberEvidence(bot.id, mentionedPlayer.id, 7, `was accused by ${sender?.name || "someone"}`, {
+        key: `chat-claim:${message.uid}:${message.ts}:${mentionedPlayer.id}`,
+      });
+      const eyewitness = recentEyewitnessEvidence(bot.id, mentionedPlayer.id);
+      if (eyewitness) return `yeah, I saw ${mentionedPlayer.name} do it`;
+      const score = Number(brain.suspicion[mentionedPlayer.id] || 0);
+      if (score >= BOT_HIGH_SUSPICION) return `I was already watching ${mentionedPlayer.name}. could be`;
+      return pickBotLine(bot, [
+        `maybe. what did you see ${mentionedPlayer.name} do?`,
+        `I'll watch ${mentionedPlayer.name}, but that's not enough to vote yet`,
+        `where did you see ${mentionedPlayer.name}?`,
+      ]);
+    }
+    return pickBotLine(bot, [`yeah ${mentionedPlayer.name} has been weird`, `could be ${mentionedPlayer.name}`, `watching ${mentionedPlayer.name} too`]);
   }
 
   if (/\b(who|sus|suspect|chameleon|killer|killed|murder|vote|did you see|what did you see|who do you think|who is it)\b/.test(lower)) {
-    const asksWhoKilled = /\bwho\b.*\b(killed|murdered|killer)\b/.test(lower);
-    if (asksWhoKilled) return evidenceReplyFor(bot);
-    if (mentionedPlayer && mentionedPlayer.id !== bot.id) {
-      if (role !== "Chameleon") {
-        const eyewitness = recentEyewitnessEvidence(bot.id, mentionedPlayer.id);
-        const score = Number(brain.suspicion[mentionedPlayer.id] || 0);
-        if (eyewitness) return `Yes. I directly saw ${mentionedPlayer.name} kill ${eyewitness.victimName} in ${eyewitness.roomName}.`;
-        if (score >= BOT_HIGH_SUSPICION) return `${mentionedPlayer.name} is suspicious to me, but I did not directly see them kill.`;
-        return `I do not have solid evidence against ${mentionedPlayer.name} yet.`;
-      }
-      if (mentionedPlayer.id === message.uid) return `I am also watching ${mentionedPlayer.name}; their route has been unusual.`;
+    if (mentionedPlayer && mentionedPlayer.id !== bot.id && role !== "Chameleon") {
+      const eyewitness = recentEyewitnessEvidence(bot.id, mentionedPlayer.id);
+      const score = Number(brain.suspicion[mentionedPlayer.id] || 0);
+      if (eyewitness) return `I saw ${mentionedPlayer.name} kill ${eyewitness.victimName}`;
+      if (score >= BOT_HIGH_SUSPICION) return `${mentionedPlayer.name} is sus to me, but I didn't see a kill`;
+      return `nothing solid on ${mentionedPlayer.name}`;
     }
     return evidenceReplyFor(bot);
   }
 
-  if (mentionedPlayer && /\b(sus|suspicious|killed|killer|vote|watch)\b/.test(lower)) {
-    if (role !== "Chameleon") {
-      rememberEvidence(bot.id, mentionedPlayer.id, 8, `was accused by ${sender?.name || "another player"}`, {
-        key: `chat-claim:${message.uid}:${message.ts}:${mentionedPlayer.id}`,
-      });
-      return `I heard your claim about ${mentionedPlayer.name}. I will watch them, but I still want direct evidence.`;
-    }
-    return `That is worth checking. I will keep an eye on ${mentionedPlayer.name}.`;
-  }
-
   if (/\b(help|what should we do|what do we do)\b/.test(lower)) {
     const suspect = strongestSuspectForBot(bot.id);
-    if (suspect?.score >= BOT_HIGH_SUSPICION) return `Stay together, finish duties, and watch ${suspect.player.name}. I will report if I see anything stronger.`;
-    return "Travel in pairs, finish duties, report bodies quickly, and ask me what I witnessed before voting.";
+    if (suspect?.score >= BOT_HIGH_SUSPICION) return `finish tasks and don't be alone with ${suspect.player.name}`;
+    return pickBotLine(bot, ["pair up and finish tasks", "don't random vote. keep doing tasks", "stay near someone and report fast"]);
   }
 
-  if (/\b(thanks|thank you|thx)\b/.test(lower)) return "You are welcome. I will keep watching and update the group if I learn something.";
+  if (/\b(thanks|thank you|thx)\b/.test(lower)) return pickBotLine(bot, ["np", "yeah", "got you"]);
+  if (/\b(ok|okay|alr|alright|sure)\b/.test(lower)) return null;
 
-  return brain.personality === "bold"
-    ? "I am listening. Ask me who I suspect, where I am, or tell me to follow you."
-    : "I understood. I will compare that with what I see before making a decision.";
+  return null;
 }
-
 async function maybeBotsRespondToChat(messages) {
   if (!isHost() || state.botChatBusy || !["game", "meeting"].includes(currentPhase())) return;
   const now = Date.now();
@@ -5277,7 +5409,7 @@ async function maybeBotsRespondToChat(messages) {
   const directlyNamed = bots.find((bot) => lower.includes(String(bot.name || "").toLowerCase()));
   const sender = state.players[message.uid];
   const isQuestion = /\?|\b(who|what|where|why|how|did|do|are|can|sus|help|follow)\b/.test(lower);
-  if (!directlyNamed && !isQuestion && Math.random() > 0.48) return;
+  if (!directlyNamed && !isQuestion && Math.random() > 0.22) return;
 
   const candidates = directlyNamed ? [directlyNamed] : [...bots].sort((a, b) => {
     const distanceA = sender?.alive ? distance(a, sender) : 0;
@@ -5293,7 +5425,7 @@ async function maybeBotsRespondToChat(messages) {
   try {
     const reply = buildBotChatReply(bot, message);
     if (!reply) return;
-    const delay = directlyNamed ? 350 + Math.random() * 450 : 650 + Math.random() * 650;
+    const delay = directlyNamed ? 650 + Math.random() * 900 : 1000 + Math.random() * 1400;
     await new Promise((resolve) => setTimeout(resolve, delay));
     if (!["game", "meeting"].includes(currentPhase()) || !state.players[bot.id]?.alive) return;
     state.lastBotChatAt = Date.now();
@@ -5442,7 +5574,7 @@ function chooseWanderTarget(id) {
       x: room.x + 60 + Math.random() * (room.w - 120),
       y: room.y + 60 + Math.random() * (room.h - 120),
     };
-    brain.nextWanderAt = now + 5000 + Math.random() * 7000;
+    brain.nextWanderAt = now + 8500 + Math.random() * 9000;
   }
   return brain.wanderTarget;
 }
@@ -5484,7 +5616,13 @@ async function runBotsInGame() {
 
     if (brain.followTargetId && brain.followUntil > now) {
       const leader = state.players[brain.followTargetId];
-      if (leader?.alive && leader.inMatch) target = leader;
+      if (leader?.alive && leader.inMatch) {
+        const followAngle = (hashNumber(bot.id) % 628) / 100;
+        target = {
+          x: leader.x + Math.cos(followAngle) * 48,
+          y: leader.y + Math.sin(followAngle) * 48,
+        };
+      }
       else {
         brain.followTargetId = "";
         brain.followUntil = 0;
@@ -5554,35 +5692,64 @@ async function runBotsInGame() {
     }
 
     if (role === "Chameleon") {
-      const possible = alivePlayers().filter((player) => player.id !== bot.id);
-      const scored = possible.map((player) => {
-        const witnesses = possible.filter((other) =>
-          other.id !== player.id
-          && canSeeEvent(other, player, BOT_VISION_RANGE)
-          && canSeeEvent(other, bot, BOT_VISION_RANGE)
-          && Number(bot.invisibleUntil || 0) <= now
-        );
-        const taskThreat = Object.keys(player.completedTasks || {}).length;
-        const isKnownWitness = brain.witnessedKills.some((event) => event.killerId === bot.id && event.victimId === player.id);
-        return {
-          player,
-          witnesses,
-          score: distance(bot, player) + witnesses.length * 310 - taskThreat * 15 - (isKnownWitness ? 120 : 0) + Math.random() * 24,
-        };
-      }).sort((a, b) => a.score - b.score);
-      const choice = scored[0];
-      if (!target) target = choice?.player || chooseWanderTarget(bot.id);
-      const desperate = alivePlayers().length <= 4;
-      const safeToKill = choice && (choice.witnesses.length === 0 || (desperate && choice.witnesses.length <= 1));
-      if (choice?.player && distance(bot, choice.player) < 58 && (bot.killReadyAt || 0) <= now && safeToKill) {
-        await performKill(bot.id, choice.player.id);
-        brain.path = [];
-        continue;
-      }
-      if ((bot.invisReadyAt || 0) <= now && choice?.player && distance(bot, choice.player) < 290
-        && (choice.witnesses.length > 0 || Math.random() < 0.12)) {
-        updates[roomPath(`players/${bot.id}/invisibleUntil`)] = now + 5000;
-        updates[roomPath(`players/${bot.id}/invisReadyAt`)] = now + 20000;
+      if (brain.escapeUntil > now && brain.escapeTarget) {
+        target = brain.escapeTarget;
+      } else {
+        brain.escapeTarget = null;
+        const possible = alivePlayers().filter((player) => player.id !== bot.id);
+        const scored = possible.map((player) => {
+          const witnesses = possible.filter((other) =>
+            other.id !== player.id
+            && canSeeEvent(other, player, BOT_VISION_RANGE)
+            && canSeeEvent(other, bot, BOT_VISION_RANGE)
+            && Number(bot.invisibleUntil || 0) <= now
+          );
+          const nearbyPlayers = possible.filter((other) => other.id !== player.id && distance(other, player) < 185).length;
+          const taskThreat = Object.keys(player.completedTasks || {}).length;
+          const recentWitness = brain.witnessedKills.some((event) => event.killerId === bot.id && event.victimId === player.id);
+          return {
+            player,
+            witnesses,
+            score: distance(bot, player)
+              + witnesses.length * 420
+              + nearbyPlayers * 125
+              - taskThreat * 18
+              - (recentWitness ? 150 : 0)
+              + Math.random() * 40,
+          };
+        }).sort((a, b) => a.score - b.score);
+        const choice = scored[0];
+        if (!target) target = choice?.player || chooseWanderTarget(bot.id);
+        const desperate = alivePlayers().length <= 4;
+        const safeToKill = choice && (choice.witnesses.length === 0 || (desperate && choice.witnesses.length <= 1));
+
+        if (choice?.player?.id !== brain.killTargetId) {
+          brain.killTargetId = choice?.player?.id || "";
+          brain.killOpportunitySince = 0;
+        }
+        if (choice?.player && distance(bot, choice.player) < 64 && safeToKill && (bot.killReadyAt || 0) <= now) {
+          if (!brain.killOpportunitySince) brain.killOpportunitySince = now;
+          const commitDelay = 650 + (hashNumber(`${bot.id}:${choice.player.id}`) % 850);
+          if (now - brain.killOpportunitySince >= commitDelay) {
+            const killed = await performKill(bot.id, choice.player.id);
+            if (killed) {
+              brain.escapeUntil = now + 4200 + Math.random() * 2200;
+              brain.nextWanderAt = 0;
+              brain.escapeTarget = chooseWanderTarget(bot.id);
+            }
+            brain.killOpportunitySince = 0;
+            brain.path = [];
+            continue;
+          }
+        } else {
+          brain.killOpportunitySince = 0;
+        }
+
+        if ((bot.invisReadyAt || 0) <= now && choice?.player && distance(bot, choice.player) < 300
+          && (choice.witnesses.length > 0 || Math.random() < 0.045)) {
+          updates[roomPath(`players/${bot.id}/invisibleUntil`)] = now + 5000;
+          updates[roomPath(`players/${bot.id}/invisReadyAt`)] = now + 20000;
+        }
       }
     } else if (TASKER_ROLES.has(role)) {
       const task = chooseBotTask(bot.id, bot, secret);
@@ -5590,7 +5757,8 @@ async function runBotsInGame() {
         target = target || task;
         if (distance(bot, task) < 48) {
           if (!brain.taskSince) brain.taskSince = now;
-          const solveTime = role === "Advisor" ? 950 : 1150;
+          const roleAdjustment = role === "Advisor" ? -350 : role === "Chef" ? 250 : 0;
+          const solveTime = Math.max(2800, brain.taskSolveMs + roleAdjustment);
           if (now - brain.taskSince > solveTime) {
             updates[roomPath(`players/${bot.id}/completedTasks/${task.assignmentId}`)] = true;
             brain.taskSince = 0;
@@ -5599,6 +5767,17 @@ async function runBotsInGame() {
           }
         } else {
           brain.taskSince = 0;
+        }
+      } else if (!target) {
+        const buddy = alivePlayers()
+          .filter((player) => player.id !== bot.id)
+          .sort((a, b) => distance(bot, a) - distance(bot, b))[0];
+        if (buddy && distance(bot, buddy) < 520) {
+          const buddyAngle = (hashNumber(`${bot.id}:buddy`) % 628) / 100;
+          target = {
+            x: buddy.x + Math.cos(buddyAngle) * 58,
+            y: buddy.y + Math.sin(buddyAngle) * 58,
+          };
         }
       }
     }
@@ -5619,6 +5798,14 @@ async function runBotsInGame() {
 
     if (!target) target = chooseWanderTarget(bot.id);
 
+    if (now >= brain.nextDecisionAt) {
+      brain.nextDecisionAt = now + 850 + Math.random() * 1500;
+      const closeToDestination = target && distance(bot, target) < 95;
+      if (!nearbyBody && Math.random() < (closeToDestination ? 0.18 : 0.045)) {
+        brain.pauseUntil = now + 350 + Math.random() * 950;
+      }
+    }
+
     if (SEWER_ROLES.has(role)) {
       const grate = nearestSewer(bot);
       const farFromTarget = target && distance(bot, target) > 520;
@@ -5635,26 +5822,20 @@ async function runBotsInGame() {
       }
     }
 
-    const next = moveBotToward(bot.id, bot, target, role === "Chameleon" ? 158 : 138);
+    const paused = now < Number(brain.pauseUntil || 0);
+    const speed = role === "Chameleon" ? brain.moveSpeed + 7 : brain.moveSpeed;
+    const next = paused ? { x: bot.x, y: bot.y } : moveBotToward(bot.id, bot, target, speed);
     updates[roomPath(`players/${bot.id}/x`)] = next.x;
     updates[roomPath(`players/${bot.id}/y`)] = next.y;
     updates[roomPath(`players/${bot.id}/lastSeen`)] = now;
 
-    if (now >= brain.nextAmbientAt && now - state.lastBotChatAt >= 14000 && Math.random() < 0.16) {
-      brain.nextAmbientAt = now + 62000 + Math.random() * 68000;
+    if (now >= brain.nextAmbientAt && now - state.lastBotChatAt >= 26000 && Math.random() < 0.07) {
+      brain.nextAmbientAt = now + 85000 + Math.random() * 90000;
       state.lastBotChatAt = now;
       const suspect = strongestSuspectForBot(bot.id);
       const lines = suspect?.score >= BOT_HIGH_SUSPICION && role !== "Chameleon"
-        ? [
-            `${suspect.player.name} is my current suspect. I am watching their route.`,
-            evidenceReplyFor(bot),
-          ]
-        : [
-            botStatusReply(bot),
-            "Stay alert near the sewer grates.",
-            "I will report anything suspicious immediately.",
-            "Try not to travel alone.",
-          ];
+        ? [evidenceReplyFor(bot), `anyone else see ${suspect.player.name} near the body?`]
+        : [botStatusReply(bot), "who's done with tasks?", "anyone want to pair up?"];
       sendMessage(lines[Math.floor(Math.random() * lines.length)], { uid: bot.id, sender: bot.name, bot: true });
     }
   }
@@ -5690,8 +5871,8 @@ async function runBotMeetingActions() {
       .sort((a, b) => b.score - a.score);
 
     if (meetingChatCount < 5 && brain.meetingSpoken !== meeting.id
-      && now - meeting.createdAt > 1800 + Math.random() * 2600
-      && (ranked[0]?.eyewitness || Math.random() < 0.3)) {
+      && now - meeting.createdAt > 2600 + Math.random() * 4200
+      && (ranked[0]?.eyewitness || Math.random() < 0.24)) {
       brain.meetingSpoken = meeting.id;
       meetingChatCount += 1;
       let line = evidenceReplyFor(bot);
@@ -5699,15 +5880,15 @@ async function runBotMeetingActions() {
         const accuser = candidates.find((candidate) => Number(brain.suspicion[candidate.id] || 0) > 0);
         const deflection = accuser || ranked.find((entry) => entry.candidate.id === meeting.callerId)?.candidate || ranked[0]?.candidate;
         line = deflection
-          ? `I did not see the kill. I think we should question ${deflection.name}'s route before deciding.`
-          : "I did not see the kill, so I do not want to claim certainty.";
+          ? `didn't see it. where was ${deflection.name}?`
+          : "didn't see the kill. probably skip";
       }
       sendMessage(line, { uid: bot.id, sender: bot.name, bot: true });
     }
 
     if (!brain.voteAt || brain.voteMeeting !== meeting.id) {
       brain.voteMeeting = meeting.id;
-      brain.voteAt = meeting.createdAt + 3800 + Math.random() * 7200;
+      brain.voteAt = meeting.createdAt + 5200 + Math.random() * 10500;
     }
 
     if (!meeting.votes?.[bot.id] && meeting.mutedPlayerId !== bot.id && now >= brain.voteAt) {
