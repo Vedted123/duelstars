@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#08080d" />
-  <title>Traitor Game — Improved Bots & Tasks</title>
+  <title>Traitor Game</title>
   <style>
 :root {
   color-scheme: dark;
@@ -334,7 +334,16 @@ button.shoot-target:active:not(:disabled) {
 .draw-prompt { padding: 10px 12px; border-radius: 10px; color: var(--gold-2); background: rgba(240,201,75,.09); border: 1px solid rgba(240,201,75,.24); font-weight: 900; }
 .draw-canvas { width: 100%; height: auto; border-radius: 13px; background: #f4eedc; border: 3px solid rgba(240,201,75,.48); touch-action: none; cursor: crosshair; }
 .draw-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-.draw-actions button { min-height: 48px; }
+ .draw-actions button { min-height: 48px; }
+
+.sabotage-card { width: min(760px, 95vw); max-height: 90vh; overflow: auto; padding: 24px; text-align: left; }
+.sabotage-card h2 { margin: 5px 0; font-family: Georgia, serif; font-size: clamp(28px, 5vw, 40px); }
+.sabotage-note { color: var(--muted); line-height: 1.5; }
+.sabotage-room-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 18px; }
+.sabotage-room-button { min-height: 78px; display: grid; gap: 5px; text-align: left; background: rgba(213,82,82,.1); border: 1px solid rgba(213,82,82,.42); }
+.sabotage-room-button strong { color: #ffd2d2; }
+.sabotage-room-button small { color: var(--muted); }
+.sabotage-room-button:disabled { opacity: .38; }
 
 @media (max-width: 620px) {
   .sort-bins, .rune-sort-bins { grid-template-columns: repeat(3, 1fr); }
@@ -430,6 +439,7 @@ button.shoot-target:active:not(:disabled) {
             <select id="ownerRoleSelect">
               <option value="">Random</option>
               <option value="Peasant">Peasant</option>
+              <option value="Time Traveler">Time Traveler</option>
               <option value="Chameleon">Chameleon</option>
               <option value="Mason">Mason</option>
               <option value="King">King</option>
@@ -549,6 +559,20 @@ button.shoot-target:active:not(:disabled) {
       </div>
     </section>
 
+    <section id="sabotageOverlay" class="screen-overlay hidden">
+      <div class="panel sabotage-card">
+        <div class="meeting-heading">
+          <div>
+            <div class="eyebrow">CHAMELEON SABOTAGE</div>
+            <h2>Erase a room's progress</h2>
+          </div>
+          <button id="closeSabotageButton" class="icon-button" aria-label="Close sabotage menu">×</button>
+        </div>
+        <p class="sabotage-note">Choose a room. Up to the five most recently completed duties in that room will become unfinished and must be done again.</p>
+        <div id="sabotageRoomGrid" class="sabotage-room-grid"></div>
+      </div>
+    </section>
+
     <section id="dutyRequestOverlay" class="screen-overlay hidden">
       <div class="panel duty-request-card">
         <div class="eyebrow">ROYAL DUTY REQUEST</div>
@@ -585,8 +609,12 @@ button.shoot-target:active:not(:disabled) {
         <button data-key="arrowright">▶</button>
       </div>
       <div class="action-pad">
-        <button id="mobileAbilityOne" title="Ability 1">E</button>
-        <button id="mobileAbilityTwo" title="Ability 2">R</button>
+        <button id="mobileAbilityOne" title="Ability 1">1</button>
+        <button id="mobileAbilityTwo" title="Ability 2">2</button>
+        <button id="mobileAbilityThree" class="hidden" title="Ability 3">3</button>
+        <button id="mobileAbilityFour" class="hidden" title="Ability 4">4</button>
+        <button id="mobileAbilityFive" class="hidden" title="Ability 5">5</button>
+        <button id="mobileAbilitySix" class="hidden" title="Ability 6">6</button>
         <button id="mobileInteract" title="Interact">F</button>
         <button id="mobileReport" title="Leave match">Q</button>
       </div>
@@ -650,6 +678,9 @@ const MAX_PLAYERS = 10;
 const PUBLIC_ROOM_ID = "ROYALHALL";
 const TASK_GOAL = 60;
 const INITIAL_TASK_BATCH = 5;
+const SABOTAGE_COOLDOWN_MS = 45000;
+const ROOM_EMPTY_DELETE_MS = 20 * 60 * 1000;
+const HUMAN_PRESENCE_GRACE_MS = 120000;
 const ABSTAIN_VOTE = "__abstain__";
 const SEWER_TRAVEL_RANGE = 950;
 const MAP_SCALE = 1.45;
@@ -662,7 +693,7 @@ const MAIN_ROOM_SPAWNS = [
   [940, 650], [1030, 625], [1120, 620], [900, 735], [1020, 735],
 ].map(([x, y]) => ({ x: x * MAP_SCALE, y: y * MAP_SCALE }));
 const ROLE_DECK = [
-  "Peasant", "Peasant", "Peasant", "Peasant",
+  "Peasant", "Peasant", "Peasant", "Time Traveler",
   "Chameleon", "Mason", "King", "Advisor", "Chef", "Sorcerer",
 ];
 const OWNER_USERNAME = "sinister_mark405";
@@ -683,7 +714,7 @@ const PLAYER_SHAPES = [
   { id: "heart", symbol: "♥", label: "Heart" },
   { id: "spade", symbol: "♠", label: "Spade" },
 ];
-const TASKER_ROLES = new Set(["Peasant", "Mason", "Advisor", "Chef", "Sorcerer"]);
+const TASKER_ROLES = new Set(["Peasant", "Mason", "Advisor", "Chef", "Sorcerer", "Time Traveler"]);
 const SEWER_ROLES = new Set(["Mason", "Chameleon"]);
 const PLAYER_COLORS = [
   "#c95656", "#4c86c6", "#65a76b", "#bd73bd", "#d79b45",
@@ -864,7 +895,7 @@ const ROLE_INFO = {
     description: "Complete duties. You alone among the loyal court may travel through castle sewers.",
   },
   Chameleon: {
-    description: "Eliminate the court without being exposed. Use sewers and vanish for five seconds.",
+    description: "Eliminate the court without being exposed. Kill, vanish, rewind, reveal the map, fire stun darts, travel through sewers, and sabotage room progress.",
   },
   King: {
     description: "You have no duties. Approve anonymous requests for new duties, and during each council issue a Royal Decree to stop one player from voting.",
@@ -877,6 +908,9 @@ const ROLE_INFO = {
   },
   Sorcerer: {
     description: "Complete duties and fire five stun darts. Once per match, stand beside a body to exchange one private three-word message with that spirit.",
+  },
+  "Time Traveler": {
+    description: "Complete duties. Rewind yourself to where you stood five seconds ago, and reveal eight seconds of movement trails with Time Vision.",
   },
 };
 
@@ -892,6 +926,7 @@ const state = {
   seance: null,
   startVotes: {},
   dutyRequests: {},
+  taskHistory: {},
   activeDutyRequestId: "",
   dutyApprovalBusy: false,
   secret: null,
@@ -906,6 +941,11 @@ const state = {
   taskGameTimer: null,
   noticedStunUntil: 0,
   mapVisibleUntil: 0,
+  timeVisionUntil: 0,
+  rewindFlashUntil: 0,
+  timeHistory: new Map(),
+  timeHistoryMatchId: "",
+  lastTimeHistorySampleAt: 0,
   chatOpen: false,
   chatUnsub: null,
   chatChannelKey: "",
@@ -932,6 +972,8 @@ const state = {
   botProcessedChatIds: new Set(),
   botChatBusy: false,
   ownerRevealActive: false,
+  sabotageBusy: false,
+  roomCleanupBusy: false,
 };
 
 function roomPath(suffix = "") {
@@ -1226,6 +1268,29 @@ $("roomInput").addEventListener("keydown", (event) => {
   if (event.key === "Enter") joinRoom();
 });
 
+function connectedHumanPlayers(players = state.players, now = Date.now()) {
+  return Object.entries(players || {})
+    .filter(([, player]) => !player?.isBot && player?.connected)
+    .filter(([, player]) => !player?.lastSeen || now - Number(player.lastSeen || 0) <= HUMAN_PRESENCE_GRACE_MS)
+    .map(([id, player]) => ({ id, ...player }));
+}
+
+async function cleanupStaleRoomOnAccess() {
+  const roomRef = ref(db, roomPath());
+  const snapshot = await get(roomRef);
+  const room = snapshot.val();
+  if (!room) return false;
+  const now = Date.now();
+  if (connectedHumanPlayers(room.players || {}, now).length) return false;
+  const emptySince = Number(room.meta?.emptySince || room.meta?.lastHumanSeenAt || room.meta?.updatedAt || room.meta?.createdAt || 0);
+  if (!emptySince || now - emptySince < ROOM_EMPTY_DELETE_MS) return false;
+  await Promise.all([
+    remove(roomRef).catch(() => {}),
+    remove(ref(db, `roomSecrets/${state.roomId}`)).catch(() => {}),
+  ]);
+  return true;
+}
+
 async function joinRoom() {
   if (!state.uid || state.joined) return;
   const name = sanitizeName($("nameInput").value);
@@ -1236,6 +1301,7 @@ async function joinRoom() {
   $("joinStatus").textContent = "Opening the castle gates…";
 
   try {
+    await cleanupStaleRoomOnAccess();
     const metaRef = ref(db, roomPath("meta"));
     const metaSnapshot = await get(metaRef);
     const meta = metaSnapshot.val() || {};
@@ -1258,6 +1324,8 @@ async function joinRoom() {
       maxPlayers: MAX_PLAYERS,
       createdAt: meta.createdAt || Date.now(),
       updatedAt: serverTimestamp(),
+      lastHumanSeenAt: serverTimestamp(),
+      emptySince: null,
     };
     if (!meta.state) metaUpdates.state = "lobby";
     await update(metaRef, metaUpdates);
@@ -1295,6 +1363,7 @@ async function joinRoom() {
       onPad: false,
       lastSeen: serverTimestamp(),
     });
+    await onDisconnect(ref(db, roomPath("meta/emptySince"))).set(serverTimestamp());
 
     state.localPos = { x: base.x || 600, y: base.y || 560 };
     state.joined = true;
@@ -1398,6 +1467,11 @@ function beginRoomListeners() {
     maybeHostActions();
   }));
 
+  state.listeners.push(onValue(ref(db, roomPath("taskHistory")), (snapshot) => {
+    state.taskHistory = snapshot.val() || {};
+    if (!$('sabotageOverlay').classList.contains('hidden')) renderSabotageRoomChoices();
+  }));
+
   state.listeners.push(onValue(ref(db, secretPath()), (snapshot) => {
     const previousTaskCount = state.secret?.tasks?.length || 0;
     state.secret = snapshot.val() || null;
@@ -1452,6 +1526,7 @@ function handleMetaChange() {
     state.secret = null;
     state.mapVisibleUntil = 0;
     setVisible("mapOverlay", false);
+    setVisible("sabotageOverlay", false);
     setVisible("meetingOverlay", false);
     setVisible("endOverlay", false);
   }
@@ -1765,9 +1840,12 @@ async function startGame(realParticipants) {
         killReadyAt: Date.now() + 9000,
         invisReadyAt: Date.now() + 4000,
         mapReadyAt: Date.now() + 4000,
+        rewindReadyAt: Date.now() + 5000,
+        visionReadyAt: Date.now() + 5000,
         invisibleUntil: 0,
         reviveUsed: false,
-        dartsRemaining: role === "Sorcerer" ? 5 : 0,
+        dartsRemaining: (role === "Sorcerer" || role === "Chameleon") ? 5 : 0,
+        sabotageReadyAt: role === "Chameleon" ? Date.now() + 9000 : 0,
         seanceUsed: false,
         stunnedUntil: 0,
         lastSeen: Date.now(),
@@ -1789,6 +1867,7 @@ async function startGame(realParticipants) {
     updates[roomPath("bodies")] = null;
     updates[roomPath("meeting")] = null;
     updates[roomPath("seance")] = null;
+    updates[roomPath("taskHistory")] = null;
     updates[roomPath("meta")] = {
       ...state.meta,
       state: "game",
@@ -1802,6 +1881,8 @@ async function startGame(realParticipants) {
       maxPlayers: MAX_PLAYERS,
       hostId: state.uid,
       updatedAt: Date.now(),
+      lastHumanSeenAt: Date.now(),
+      emptySince: null,
     };
 
     await update(ref(db), updates);
@@ -1855,51 +1936,104 @@ function renderRolePanel() {
     addButton("!", "Stunned", `${Math.ceil((me.stunnedUntil - now) / 1000)}s`, () => {}, { disabled: true, danger: true });
   }
 
+  let mobileAbilityCount = 0;
   if (role === "Chameleon") {
+    mobileAbilityCount = 6;
     const killRemaining = Math.max(0, (me.killReadyAt || 0) - now);
     const invisRemaining = Math.max(0, (me.invisReadyAt || 0) - now);
-    addButton("E", "Kill nearest", killRemaining ? `${Math.ceil(killRemaining / 1000)}s` : "Ready", useAbilityOne, {
-      ready: !killRemaining,
-      danger: true,
+    const rewindRemaining = Math.max(0, (me.rewindReadyAt || 0) - now);
+    const mapRemaining = Math.max(0, (me.mapReadyAt || 0) - now);
+    const sabotageRemaining = Math.max(0, (me.sabotageReadyAt || 0) - now);
+    const history = state.timeHistory.get(state.uid) || [];
+    const hasRewindPoint = history.some((sample) => sample.at <= now - 4500);
+    const darts = Number(me.dartsRemaining ?? 5);
+    addButton("1", "Kill nearest", killRemaining ? `${Math.ceil(killRemaining / 1000)}s` : "Ready", useAbilityOne, {
+      ready: !killRemaining, danger: true,
       disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(killRemaining),
     });
-    addButton("R", "Become invisible", invisRemaining ? `${Math.ceil(invisRemaining / 1000)}s` : "Ready", useAbilityTwo, {
+    addButton("2", "Become invisible", invisRemaining ? `${Math.ceil(invisRemaining / 1000)}s` : "Ready", useAbilityTwo, {
       ready: !invisRemaining,
       disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(invisRemaining),
     });
+    addButton("3", "Rewind 5 seconds", rewindRemaining ? `${Math.ceil(rewindRemaining / 1000)}s` : (hasRewindPoint ? "Ready" : "Recording…"), useAbilityThree, {
+      ready: !rewindRemaining && hasRewindPoint,
+      disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(rewindRemaining) || !hasRewindPoint,
+    });
+    addButton("4", "Marauder's Map", mapRemaining ? `${Math.ceil(mapRemaining / 1000)}s` : "Ready", useAbilityFour, {
+      ready: !mapRemaining,
+      disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(mapRemaining),
+    });
+    addButton("5", "Fire stun dart", `${darts} dart${darts === 1 ? "" : "s"} left`, useAbilityFive, {
+      ready: darts > 0,
+      disabled: !me.alive || stunned || currentPhase() !== "game" || darts <= 0,
+    });
+    addButton("6", "Sabotage a room", sabotageRemaining ? `${Math.ceil(sabotageRemaining / 1000)}s` : "Ready", useAbilitySix, {
+      ready: !sabotageRemaining,
+      danger: true,
+      disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(sabotageRemaining),
+    });
+  } else if (role === "Time Traveler") {
+    mobileAbilityCount = 2;
+    const rewindRemaining = Math.max(0, (me.rewindReadyAt || 0) - now);
+    const visionRemaining = Math.max(0, (me.visionReadyAt || 0) - now);
+    const history = state.timeHistory.get(state.uid) || [];
+    const hasRewindPoint = history.some((sample) => sample.at <= now - 4500);
+    addButton("1", "Rewind 5 seconds", rewindRemaining
+      ? `${Math.ceil(rewindRemaining / 1000)}s`
+      : (hasRewindPoint ? "Ready" : "Recording…"), useAbilityOne, {
+      ready: !rewindRemaining && hasRewindPoint,
+      disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(rewindRemaining) || !hasRewindPoint,
+    });
+    addButton("2", "Time Vision", visionRemaining
+      ? `${Math.ceil(visionRemaining / 1000)}s`
+      : (state.timeVisionUntil > now ? "Active" : "Ready"), useAbilityTwo, {
+      ready: !visionRemaining,
+      disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(visionRemaining),
+    });
   } else if (role === "Advisor") {
+    mobileAbilityCount = 1;
     const remaining = Math.max(0, (me.mapReadyAt || 0) - now);
-    addButton("E", "Marauder's Map", remaining ? `${Math.ceil(remaining / 1000)}s` : "Ready", useAbilityOne, {
+    addButton("1", "Marauder's Map", remaining ? `${Math.ceil(remaining / 1000)}s` : "Ready", useAbilityOne, {
       ready: !remaining,
       disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(remaining),
     });
   } else if (role === "Chef") {
-    addButton("E", "Revive nearby body", me.reviveUsed ? "Used" : "Ready", useAbilityOne, {
+    mobileAbilityCount = 1;
+    addButton("1", "Revive nearby body", me.reviveUsed ? "Used" : "Ready", useAbilityOne, {
       ready: !me.reviveUsed,
       disabled: !me.alive || stunned || me.reviveUsed || currentPhase() !== "game",
     });
   } else if (role === "Mason") {
-    addButton("E", "Use nearby sewer", "Near grate", useAbilityOne, {
+    mobileAbilityCount = 1;
+    addButton("1", "Use nearby sewer", "Near grate", useAbilityOne, {
       disabled: !me.alive || stunned || currentPhase() !== "game",
     });
   } else if (role === "Sorcerer") {
+    mobileAbilityCount = 2;
     const darts = Number(me.dartsRemaining ?? 5);
-    addButton("E", "Fire stun dart", `${darts} dart${darts === 1 ? "" : "s"} left`, useAbilityOne, {
+    addButton("1", "Fire stun dart", `${darts} dart${darts === 1 ? "" : "s"} left`, useAbilityOne, {
       ready: darts > 0,
       disabled: !me.alive || stunned || currentPhase() !== "game" || darts <= 0,
     });
     const nearbySpirit = nearestBody(state.localPos, 76, true);
     const seanceBusy = Boolean(state.seance && state.seance.phase !== "complete");
-    addButton("R", "Commune with dead", me.seanceUsed ? "Used" : (nearbySpirit ? "Spirit nearby" : "Stand by a body"), useAbilityTwo, {
+    addButton("2", "Commune with dead", me.seanceUsed ? "Used" : (nearbySpirit ? "Spirit nearby" : "Stand by a body"), useAbilityTwo, {
       ready: !me.seanceUsed && Boolean(nearbySpirit) && !seanceBusy,
       disabled: !me.alive || stunned || currentPhase() !== "game" || me.seanceUsed || !nearbySpirit || seanceBusy,
     });
   } else if (role === "King") {
-    addButton("E", "Royal Decree", currentPhase() === "meeting" ? "Choose target" : "Council only", useAbilityOne, {
+    mobileAbilityCount = 1;
+    addButton("1", "Royal Decree", currentPhase() === "meeting" ? "Choose target" : "Council only", useAbilityOne, {
       ready: currentPhase() === "meeting" && !state.meeting?.decreeBy,
       disabled: !me.alive || currentPhase() !== "meeting" || Boolean(state.meeting?.decreeBy),
     });
   }
+
+  [1, 2, 3, 4, 5, 6].forEach((number) => {
+    const names = ["One", "Two", "Three", "Four", "Five", "Six"];
+    const button = $(`mobileAbility${names[number - 1]}`);
+    if (button) setVisible(button.id, number <= mobileAbilityCount);
+  });
 
   addButton("F", "Interact / solve duty", TASKER_ROLES.has(role) ? "Press near task" : "Castle objects", handleInteraction, {
     disabled: currentPhase() !== "game" || !me.alive || stunned,
@@ -1940,6 +2074,7 @@ function useAbilityOne() {
   const me = getMyPlayer();
   if (!me?.alive || (me.stunnedUntil || 0) > Date.now()) return;
   if (role === "Chameleon") performKill(state.uid);
+  else if (role === "Time Traveler") useTimeRewind();
   else if (role === "Advisor") useAdvisorMap();
   else if (role === "Chef") useChefRevive();
   else if (role === "Mason") tryOpenNearbySewer();
@@ -1955,7 +2090,24 @@ function useAbilityTwo() {
   const me = getMyPlayer();
   if (!me?.alive || (me.stunnedUntil || 0) > Date.now()) return;
   if (state.secret?.role === "Chameleon") useInvisibility();
+  else if (state.secret?.role === "Time Traveler") useTimeVision();
   else if (state.secret?.role === "Sorcerer") beginSeance();
+}
+
+function useAbilityThree() {
+  if (state.secret?.role === "Chameleon") useTimeRewind();
+}
+
+function useAbilityFour() {
+  if (state.secret?.role === "Chameleon") useAdvisorMap();
+}
+
+function useAbilityFive() {
+  if (state.secret?.role === "Chameleon") shootSorcererDart(state.uid);
+}
+
+function useAbilitySix() {
+  if (state.secret?.role === "Chameleon") openSabotageMenu();
 }
 
 function toggleControlsPanel() {
@@ -2045,12 +2197,34 @@ function nearestTask() {
   return nearestDistance <= 62 ? nearest : null;
 }
 
+function queueTaskCompletion(updates, playerId, assignmentId, completedAt = Date.now()) {
+  const task = taskDefinitionFor(assignmentId);
+  if (!task) return false;
+  const historyRef = push(ref(db, roomPath("taskHistory")));
+  const historyId = historyRef.key;
+  updates[roomPath(`players/${playerId}/completedTasks/${assignmentId}`)] = {
+    completedAt,
+    room: task.room,
+  };
+  updates[roomPath(`taskHistory/${historyId}`)] = {
+    playerId,
+    assignmentId,
+    taskId: task.id,
+    room: task.room,
+    completedAt,
+    active: true,
+  };
+  return true;
+}
+
 async function completeTask(taskId, playerId = state.uid) {
   const player = state.players[playerId];
   if (!taskId || state.taskPending || currentPhase() !== "game" || !player?.alive) return;
   if (playerId === state.uid) state.taskPending = true;
   try {
-    await set(ref(db, roomPath(`players/${playerId}/completedTasks/${taskId}`)), true);
+    const updates = {};
+    if (!queueTaskCompletion(updates, playerId, taskId)) return;
+    await update(ref(db), updates);
     if (playerId === state.uid) showToast("Royal duty completed");
   } finally {
     if (playerId === state.uid) {
@@ -3289,7 +3463,7 @@ async function shootSorcererDart(shooterId = state.uid, preferredTargetId = "") 
   const shooter = state.players[shooterId];
   const role = shooterId === state.uid ? state.secret?.role : state.allSecrets[shooterId]?.role;
   const now = Date.now();
-  if (role !== "Sorcerer" || !shooter?.alive || (shooter.stunnedUntil || 0) > now) return false;
+  if (!["Sorcerer", "Chameleon"].includes(role) || !shooter?.alive || (shooter.stunnedUntil || 0) > now) return false;
   const displayedDarts = Number(shooter.dartsRemaining ?? 5);
   if (displayedDarts <= 0) {
     if (shooterId === state.uid) showToast("You have used all five darts");
@@ -3372,7 +3546,11 @@ async function performKill(killerId = state.uid, preferredTargetId = "") {
     createdAt: now,
   };
   await update(ref(db), updates);
-  if (killerId === state.uid) showToast("The Chameleon strikes");
+  const victimRole = victim.id === state.uid ? state.secret?.role : state.allSecrets[victim.id]?.role;
+  if (victimRole === "King" && isHost()) {
+    await endGame("chameleon", `${killer.name || "The Chameleon"} assassinated the King and seized the castle.`);
+  }
+  if (killerId === state.uid) showToast(victimRole === "King" ? "The King has fallen — victory" : "The Chameleon strikes");
   return true;
 }
 
@@ -3388,9 +3566,67 @@ async function useInvisibility() {
   showToast("Invisible for 5 seconds");
 }
 
+async function useTimeRewind() {
+  const me = getMyPlayer();
+  if (!["Time Traveler", "Chameleon"].includes(state.secret?.role) || !me?.alive || currentPhase() !== "game") return;
+  const now = Date.now();
+  if ((me.rewindReadyAt || 0) > now) {
+    showToast(`Rewind ready in ${Math.ceil(((me.rewindReadyAt || 0) - now) / 1000)}s`);
+    return;
+  }
+
+  const history = state.timeHistory.get(state.uid) || [];
+  let target = null;
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    if (history[index].at <= now - 5000) {
+      target = history[index];
+      break;
+    }
+  }
+  if (!target) {
+    showToast("The timeline is still recording");
+    return;
+  }
+
+  let destination = { x: target.x, y: target.y };
+  if (!isWalkable(destination.x, destination.y)) {
+    const safeCell = nearestWalkableCell(destination, 42);
+    if (!safeCell) {
+      showToast("That point in time is no longer reachable");
+      return;
+    }
+    destination = { x: safeCell.px, y: safeCell.py };
+  }
+
+  state.localPos.x = destination.x;
+  state.localPos.y = destination.y;
+  state.rewindFlashUntil = now + 900;
+  state.lastMoveWrite = 0;
+  await update(ref(db, roomPath(`players/${state.uid}`)), {
+    x: Math.round(destination.x * 10) / 10,
+    y: Math.round(destination.y * 10) / 10,
+    rewindReadyAt: now + 40000,
+    lastSeen: serverTimestamp(),
+  });
+  showToast("Rewound five seconds");
+}
+
+async function useTimeVision() {
+  const me = getMyPlayer();
+  if (state.secret?.role !== "Time Traveler" || !me?.alive || currentPhase() !== "game") return;
+  const now = Date.now();
+  if ((me.visionReadyAt || 0) > now) {
+    showToast(`Time Vision ready in ${Math.ceil(((me.visionReadyAt || 0) - now) / 1000)}s`);
+    return;
+  }
+  state.timeVisionUntil = now + 4000;
+  await set(ref(db, roomPath(`players/${state.uid}/visionReadyAt`)), now + 30000);
+  showToast("Time Vision reveals the last eight seconds");
+}
+
 async function useAdvisorMap() {
   const me = getMyPlayer();
-  if (state.secret?.role !== "Advisor" || !me?.alive || currentPhase() !== "game") return;
+  if (!["Advisor", "Chameleon"].includes(state.secret?.role) || !me?.alive || currentPhase() !== "game") return;
   const now = Date.now();
   if ((me.mapReadyAt || 0) > now) return;
   state.mapVisibleUntil = now + 5000;
@@ -3398,6 +3634,108 @@ async function useAdvisorMap() {
   setVisible("mapOverlay", true);
   showToast("The Marauder's Map reveals all players");
 }
+
+function activeTaskHistoryForRoom(roomId, history = state.taskHistory) {
+  return Object.entries(history || {})
+    .map(([id, entry]) => ({ id, ...entry }))
+    .filter((entry) => entry.active !== false && entry.room === roomId)
+    .sort((a, b) => Number(b.completedAt || 0) - Number(a.completedAt || 0));
+}
+
+function renderSabotageRoomChoices() {
+  const grid = $("sabotageRoomGrid");
+  if (!grid) return;
+  grid.replaceChildren();
+  for (const room of ROOMS) {
+    const activeCount = activeTaskHistoryForRoom(room.id).length;
+    const button = document.createElement("button");
+    button.className = "sabotage-room-button";
+    button.disabled = activeCount <= 0 || state.sabotageBusy;
+    const title = document.createElement("strong");
+    title.textContent = room.name;
+    const detail = document.createElement("small");
+    detail.textContent = activeCount
+      ? `Undo ${Math.min(5, activeCount)} of ${activeCount} completed ${activeCount === 1 ? "duty" : "duties"}`
+      : "No completed duties to erase";
+    button.append(title, detail);
+    button.addEventListener("click", () => performSabotage(state.uid, room.id));
+    grid.appendChild(button);
+  }
+}
+
+function openSabotageMenu() {
+  const me = getMyPlayer();
+  const now = Date.now();
+  if (state.secret?.role !== "Chameleon" || !me?.alive || currentPhase() !== "game") return;
+  if ((me.sabotageReadyAt || 0) > now) {
+    showToast(`Sabotage ready in ${Math.ceil(((me.sabotageReadyAt || 0) - now) / 1000)}s`);
+    return;
+  }
+  renderSabotageRoomChoices();
+  setVisible("sabotageOverlay", true);
+}
+
+async function performSabotage(chameleonId, roomId) {
+  if (state.sabotageBusy || currentPhase() !== "game") return false;
+  const actor = state.players[chameleonId];
+  const role = chameleonId === state.uid ? state.secret?.role : state.allSecrets[chameleonId]?.role;
+  const now = Date.now();
+  if (role !== "Chameleon" || !actor?.alive || (actor.sabotageReadyAt || 0) > now) return false;
+  state.sabotageBusy = true;
+  try {
+    const [playersSnapshot, historySnapshot] = await Promise.all([
+      get(ref(db, roomPath("players"))),
+      get(ref(db, roomPath("taskHistory"))),
+    ]);
+    const freshPlayers = playersSnapshot.val() || {};
+    const freshTotal = Object.values(freshPlayers)
+      .filter((player) => player?.inMatch)
+      .reduce((total, player) => total + Object.keys(player.completedTasks || {}).length, 0);
+    if (freshTotal >= TASK_GOAL) {
+      if (chameleonId === state.uid) showToast("Too late — the castle already reached 60 duties");
+      setVisible("sabotageOverlay", false);
+      return false;
+    }
+
+    const freshHistory = historySnapshot.val() || {};
+    const targets = activeTaskHistoryForRoom(roomId, freshHistory).slice(0, 5);
+    if (!targets.length) {
+      if (chameleonId === state.uid) showToast("That room has no completed duties to erase");
+      return false;
+    }
+
+    const cooldownTransaction = await runTransaction(ref(db, roomPath(`players/${chameleonId}/sabotageReadyAt`)), (current) => {
+      const readyAt = Number(current || 0);
+      if (readyAt > now) return;
+      return now + SABOTAGE_COOLDOWN_MS;
+    });
+    if (!cooldownTransaction.committed) return false;
+
+    const updates = {};
+    for (const target of targets) {
+      updates[roomPath(`players/${target.playerId}/completedTasks/${target.assignmentId}`)] = null;
+      updates[roomPath(`taskHistory/${target.id}/active`)] = false;
+      updates[roomPath(`taskHistory/${target.id}/sabotagedAt`)] = now;
+      updates[roomPath(`taskHistory/${target.id}/sabotagedBy`)] = chameleonId;
+    }
+    await update(ref(db), updates);
+    const roomName = ROOMS.find((room) => room.id === roomId)?.name || "a castle room";
+    await sendMessage(`Sabotage struck ${roomName}. ${targets.length} completed ${targets.length === 1 ? "duty was" : "duties were"} erased.`, {
+      system: true,
+      sender: "Castle Herald",
+      uid: "system",
+      channel: "game",
+    });
+    if (chameleonId === state.uid) showToast(`${targets.length} duties erased in ${roomName}`);
+    setVisible("sabotageOverlay", false);
+    return true;
+  } finally {
+    state.sabotageBusy = false;
+    renderSabotageRoomChoices();
+  }
+}
+
+$("closeSabotageButton").addEventListener("click", () => setVisible("sabotageOverlay", false));
 
 function nearestBody(position = state.localPos, maxDistance = 66, includeReported = true) {
   let result = null;
@@ -3891,6 +4229,17 @@ async function finalizeMeeting() {
 }
 async function checkWinConditions() {
   if (!isHost() || currentPhase() !== "game") return;
+
+  const kingEntry = Object.entries(state.allSecrets).find(([, secret]) => secret?.role === "King");
+  if (kingEntry) {
+    const [kingId] = kingEntry;
+    const king = state.players[kingId];
+    if (king && !king.alive && king.deathCause === "chameleon") {
+      await endGame("chameleon", "The Chameleon assassinated the King and won instantly.");
+      return;
+    }
+  }
+
   const totalTasks = TASK_GOAL;
   if (completedTaskCount() >= totalTasks) {
     await endGame("loyalists", "Every royal duty was completed before the Chameleon could take the castle.");
@@ -3928,6 +4277,9 @@ $("returnLobbyButton").addEventListener("click", resetToLobby);
 
 async function resetToLobby() {
   if (!isHost()) return;
+  state.timeHistory.clear();
+  state.timeHistoryMatchId = "";
+  state.timeVisionUntil = 0;
   const updates = {};
   for (const [id, player] of Object.entries(state.players)) {
     if (player.isBot) {
@@ -4173,6 +4525,7 @@ function exitToJoinScreen(previousRoomId) {
   setVisible("meetingOverlay", false);
   setVisible("seanceOverlay", false);
   setVisible("dutyRequestOverlay", false);
+  setVisible("sabotageOverlay", false);
   setVisible("sewerOverlay", false);
   setVisible("mapOverlay", false);
   setVisible("endOverlay", false);
@@ -4224,12 +4577,17 @@ window.addEventListener("keydown", (event) => {
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) event.preventDefault();
   state.keys[key] = true;
   if (event.repeat) return;
-  if (key === "e") useAbilityOne();
-  if (key === "r") useAbilityTwo();
+  if (key === "1") useAbilityOne();
+  if (key === "2") useAbilityTwo();
+  if (key === "3") useAbilityThree();
+  if (key === "4") useAbilityFour();
+  if (key === "5") useAbilityFive();
+  if (key === "6") useAbilitySix();
   if (key === "f") handleInteraction();
   if (key === "q") leaveCurrentGame();
   if (key === "escape") {
     setVisible("sewerOverlay", false);
+    setVisible("sabotageOverlay", false);
     setVisible("customizeOverlay", false);
     if (state.chatOpen) openChat();
   }
@@ -4257,6 +4615,10 @@ document.querySelectorAll("[data-key]").forEach((button) => {
 });
 $("mobileAbilityOne").addEventListener("click", useAbilityOne);
 $("mobileAbilityTwo").addEventListener("click", useAbilityTwo);
+$("mobileAbilityThree").addEventListener("click", useAbilityThree);
+$("mobileAbilityFour").addEventListener("click", useAbilityFour);
+$("mobileAbilityFive").addEventListener("click", useAbilityFive);
+$("mobileAbilitySix").addEventListener("click", useAbilitySix);
 $("mobileInteract").addEventListener("click", handleInteraction);
 $("mobileReport").addEventListener("click", leaveCurrentGame);
 
@@ -4923,6 +5285,175 @@ function drawCourtier(context, customization, isMe = false, alive = true, alpha 
   context.restore();
 }
 
+function drawRoleTexture(context, role, now = Date.now()) {
+  if (!role) return;
+  context.save();
+  context.lineCap = "round";
+  context.lineJoin = "round";
+
+  if (role === "Peasant") {
+    context.fillStyle = "#8b6338";
+    context.fillRect(-15, 3, 30, 22);
+    context.strokeStyle = "#d7b474";
+    context.lineWidth = 2;
+    context.strokeRect(-14, 4, 28, 20);
+    context.fillStyle = "#cba86d";
+    context.fillRect(5, 12, 7, 7);
+  } else if (role === "Mason") {
+    context.fillStyle = "#737985";
+    context.fillRect(-25, -5, 13, 12);
+    context.fillRect(12, -5, 13, 12);
+    context.strokeStyle = "#d1d5dc";
+    context.lineWidth = 3;
+    context.beginPath(); context.moveTo(23, 13); context.lineTo(34, 25); context.stroke();
+    context.fillStyle = "#aab0ba";
+    context.beginPath(); context.moveTo(29, 20); context.lineTo(40, 23); context.lineTo(33, 30); context.closePath(); context.fill();
+  } else if (role === "Chameleon") {
+    context.strokeStyle = "rgba(118,255,153,.9)";
+    context.lineWidth = 2;
+    for (const x of [-12, 0, 12]) {
+      context.beginPath(); context.arc(x, 8, 5, 0, Math.PI * 2); context.stroke();
+    }
+    context.fillStyle = "#ef5b5b";
+    context.beginPath(); context.arc(0, -25, 3.2, 0, Math.PI * 2); context.fill();
+  } else if (role === "King") {
+    context.fillStyle = "#f3cf50";
+    context.strokeStyle = "#fff1a4";
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(-17, -43); context.lineTo(-12, -59); context.lineTo(-4, -48);
+    context.lineTo(0, -63); context.lineTo(5, -48); context.lineTo(14, -59);
+    context.lineTo(18, -43); context.closePath(); context.fill(); context.stroke();
+    context.strokeStyle = "#e4c45c";
+    context.lineWidth = 4;
+    context.beginPath(); context.moveTo(30, -3); context.lineTo(34, 29); context.stroke();
+    context.fillStyle = "#f4d15b";
+    context.beginPath(); context.arc(29, -7, 6, 0, Math.PI * 2); context.fill();
+  } else if (role === "Advisor") {
+    context.strokeStyle = "#d9d2ff";
+    context.lineWidth = 2;
+    context.beginPath(); context.arc(7, -27, 6, 0, Math.PI * 2); context.stroke();
+    context.beginPath(); context.moveTo(13, -25); context.lineTo(20, -21); context.stroke();
+    context.fillStyle = "#ede1b5";
+    drawRoundedRect(context, -35, 5, 15, 25, 3); context.fill();
+    context.strokeStyle = "#8d7348";
+    context.lineWidth = 1.5;
+    context.beginPath(); context.moveTo(-32, 11); context.lineTo(-23, 11); context.moveTo(-32, 16); context.lineTo(-23, 16); context.stroke();
+    context.fillStyle = "rgba(104,78,170,.75)";
+    context.fillRect(-6, -8, 12, 36);
+  } else if (role === "Chef") {
+    context.fillStyle = "#f4f0e7";
+    context.beginPath();
+    context.arc(-10, -48, 10, 0, Math.PI * 2);
+    context.arc(0, -54, 12, 0, Math.PI * 2);
+    context.arc(11, -48, 10, 0, Math.PI * 2);
+    context.fill();
+    context.fillRect(-18, -48, 36, 14);
+    context.strokeStyle = "#d8d0c3";
+    context.lineWidth = 4;
+    context.beginPath(); context.moveTo(29, 4); context.lineTo(36, 28); context.stroke();
+    context.fillStyle = "#c8c3ba";
+    context.beginPath(); context.ellipse(27, 0, 6, 9, -.3, 0, Math.PI * 2); context.fill();
+  } else if (role === "Sorcerer") {
+    context.fillStyle = "#4f2e72";
+    context.beginPath(); context.moveTo(-20, -43); context.lineTo(4, -78); context.lineTo(18, -43); context.closePath(); context.fill();
+    context.fillStyle = "#8156aa";
+    context.fillRect(-23, -46, 44, 7);
+    const pulse = 4 + Math.sin(now / 180) * 2;
+    context.fillStyle = "rgba(171,113,255,.9)";
+    context.beginPath(); context.arc(31, 4, pulse, 0, Math.PI * 2); context.fill();
+    context.strokeStyle = "#9d77c7";
+    context.lineWidth = 3;
+    context.beginPath(); context.moveTo(28, 10); context.lineTo(34, 31); context.stroke();
+  } else if (role === "Time Traveler") {
+    context.fillStyle = "rgba(67,231,207,.8)";
+    context.fillRect(-19, -10, 38, 5);
+    context.strokeStyle = "#78f7e3";
+    context.lineWidth = 2;
+    context.beginPath(); context.arc(0, -25, 22, Math.PI * 1.08, Math.PI * 1.92); context.stroke();
+
+    // A harmless green sci-fi portal device, carried only as a role cosmetic.
+    context.save();
+    context.translate(29, 8);
+    context.rotate(-0.28);
+    context.fillStyle = "#d8e3df";
+    drawRoundedRect(context, -8, -8, 25, 14, 5); context.fill();
+    context.fillStyle = "#30433f";
+    drawRoundedRect(context, -4, 5, 8, 18, 3); context.fill();
+    context.fillStyle = "#7dff70";
+    context.beginPath(); context.arc(18, -1, 8, 0, Math.PI * 2); context.fill();
+    context.strokeStyle = "rgba(125,255,112,.55)";
+    context.lineWidth = 3;
+    context.beginPath(); context.arc(18, -1, 12 + Math.sin(now / 140) * 2, 0, Math.PI * 2); context.stroke();
+    context.restore();
+  }
+
+  context.restore();
+}
+
+function recordTimeHistory(now, phase) {
+  if (phase !== "game" || !["Time Traveler", "Chameleon"].includes(state.secret?.role)) return;
+  const matchId = state.meta?.matchId || "";
+  if (state.timeHistoryMatchId !== matchId) {
+    state.timeHistory.clear();
+    state.timeHistoryMatchId = matchId;
+    state.lastTimeHistorySampleAt = 0;
+  }
+  if (now - state.lastTimeHistorySampleAt < 180) return;
+  state.lastTimeHistorySampleAt = now;
+
+  for (const [id, player] of Object.entries(state.players)) {
+    if (!player?.inMatch) continue;
+    const render = state.renderPositions.get(id);
+    const x = id === state.uid ? state.localPos.x : (render?.x ?? player.x);
+    const y = id === state.uid ? state.localPos.y : (render?.y ?? player.y);
+    const samples = state.timeHistory.get(id) || [];
+    samples.push({ at: now, x, y, alive: Boolean(player.alive) });
+    while (samples.length && samples[0].at < now - 10000) samples.shift();
+    state.timeHistory.set(id, samples);
+  }
+}
+
+function drawTimeVisionTrails(context, now) {
+  if (state.secret?.role !== "Time Traveler" || state.timeVisionUntil <= now) return;
+  const cutoff = now - 8000;
+  const recentKillers = new Set(Object.values(state.bodies || {})
+    .filter((body) => now - Number(body?.createdAt || 0) <= 8000)
+    .map((body) => body?.killerId)
+    .filter(Boolean));
+
+  context.save();
+  for (const [id, history] of state.timeHistory.entries()) {
+    const samples = history.filter((sample) => sample.at >= cutoff);
+    if (samples.length < 2) continue;
+    const player = state.players[id];
+    const dead = !player?.alive;
+    const baseColor = dead ? "170,176,190" : (recentKillers.has(id) ? "231,78,78" : "244,207,80");
+
+    context.strokeStyle = `rgba(${baseColor},.28)`;
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(samples[0].x, samples[0].y);
+    for (const sample of samples.slice(1)) context.lineTo(sample.x, sample.y);
+    context.stroke();
+
+    for (let index = 2; index < samples.length; index += 3) {
+      const previous = samples[index - 1];
+      const sample = samples[index];
+      const angle = Math.atan2(sample.y - previous.y, sample.x - previous.x) + Math.PI / 2;
+      const ageAlpha = clamp(1 - ((now - sample.at) / 8500), 0.18, 0.85);
+      context.save();
+      context.translate(sample.x, sample.y);
+      context.rotate(angle);
+      context.fillStyle = `rgba(${baseColor},${ageAlpha})`;
+      context.beginPath(); context.ellipse(-4, 0, 2.5, 5, -.22, 0, Math.PI * 2); context.fill();
+      context.beginPath(); context.ellipse(4, 6, 2.5, 5, .22, 0, Math.PI * 2); context.fill();
+      context.restore();
+    }
+  }
+  context.restore();
+}
+
 function updateRenderPositions(deltaSeconds) {
   const blend = 1 - Math.exp(-10 * deltaSeconds);
   for (const [id, render] of state.renderPositions) {
@@ -4950,6 +5481,13 @@ function drawPlayers(context, phase) {
     context.save();
     context.translate(x, y);
     drawCourtier(context, player, isMe, player.alive, player.invisibleUntil > now && isMe ? 0.3 : 1);
+    if (isMe && phase !== "lobby") drawRoleTexture(context, state.secret?.role, now);
+    if (isMe && state.rewindFlashUntil > now) {
+      const radius = 34 + (state.rewindFlashUntil - now) / 28;
+      context.strokeStyle = "rgba(99,255,220,.75)";
+      context.lineWidth = 4;
+      context.beginPath(); context.arc(0, -8, radius, 0, Math.PI * 2); context.stroke();
+    }
     context.fillStyle = "#ece5d1";
     context.font = "700 13px system-ui";
     context.textAlign = "center";
@@ -4977,7 +5515,7 @@ function drawPlayers(context, phase) {
 }
 
 function renderMapOverlay(now) {
-  if (state.mapVisibleUntil <= now || state.secret?.role !== "Advisor") {
+  if (state.mapVisibleUntil <= now || !["Advisor", "Chameleon"].includes(state.secret?.role)) {
     setVisible("mapOverlay", false);
     return;
   }
@@ -5041,6 +5579,8 @@ function renderFrame(timestamp) {
   updateInteractionPrompt();
 
   const phase = currentPhase();
+  const now = Date.now();
+  recordTimeHistory(now, phase);
   const world = phase === "lobby" ? LOBBY_SIZE : WORLD_SIZE;
   updateCamera(world.width, world.height);
   ctx.setTransform(state.viewport.dpr, 0, 0, state.viewport.dpr, 0, 0);
@@ -5049,10 +5589,10 @@ function renderFrame(timestamp) {
   ctx.translate(-state.camera.x, -state.camera.y);
   if (phase === "lobby") drawLobby(ctx);
   else drawCastle(ctx);
+  drawTimeVisionTrails(ctx, now);
   drawPlayers(ctx, phase);
   ctx.restore();
 
-  const now = Date.now();
   if (now >= state.hudUpdateAt) {
     updateHud(now);
     state.hudUpdateAt = now + 350;
@@ -5108,6 +5648,9 @@ function brainFor(id) {
       followUntil: 0,
       announcedBodies: {},
       nextDecisionChatAt: 0,
+      positionHistory: [],
+      lastChatSuspectId: "",
+      lastChatSenderId: "",
     });
   }
   return state.botBrains.get(id);
@@ -5290,12 +5833,16 @@ function evidenceReplyFor(bot) {
 
   const hiddenKill = [...brain.evidence].reverse().find((item) => item.reason?.includes("attacker was invisible"));
   if (hiddenKill) return "I saw the body drop, but the killer was invisible";
-  return pickBotLine(bot, [
-    "didn't see enough. skip is safer",
-    "no clue yet",
-    "I don't have anything solid",
-    "no proof from me",
-  ]);
+  const guess = strongestSuspectForBot(bot.id);
+  if (guess?.player) {
+    brain.lastChatSuspectId = guess.player.id;
+    return pickBotLine(bot, [
+      `I don't have hard proof. ${guess.player.name} is still my best read`,
+      `nothing definite, but I'm leaning ${guess.player.name}`,
+      `${guess.player.name} is my current guess. low confidence`,
+    ]);
+  }
+  return "I don't have a useful read yet";
 }
 
 function botStatusReply(bot) {
@@ -5317,6 +5864,45 @@ function botStatusReply(bot) {
     : pickBotLine(bot, [`in ${roomName}`, `${roomName} rn`, `walking through ${roomName}`]);
 }
 
+function botAlibiReply(bot) {
+  const roomName = locationNameFor(bot).replace(/^Castle /, "");
+  const brain = brainFor(bot.id);
+  const nearby = alivePlayers()
+    .filter((player) => player.id !== bot.id && distance(bot, player) <= 150)
+    .sort((a, b) => distance(bot, a) - distance(bot, b))[0];
+  if (nearby) return `I'm in ${roomName} with ${nearby.name}`;
+  const task = TASKER_ROLES.has(state.allSecrets[bot.id]?.role)
+    ? chooseBotTask(bot.id, bot, state.allSecrets[bot.id])
+    : null;
+  if (task) return `I'm in ${roomName}, on ${task.name.toLowerCase()}`;
+  const lastSeen = Object.entries(brain.recentSightings)
+    .sort((a, b) => Number(b[1]?.at || 0) - Number(a[1]?.at || 0))[0];
+  if (lastSeen && Date.now() - Number(lastSeen[1]?.at || 0) < 9000) {
+    return `I'm in ${roomName}. I passed ${state.players[lastSeen[0]]?.name || "someone"} a few seconds ago`;
+  }
+  return `I'm in ${roomName}`;
+}
+
+function botSightingReply(bot, player) {
+  const sighting = brainFor(bot.id).recentSightings[player.id];
+  if (!sighting || Date.now() - Number(sighting.at || 0) > 15000) {
+    return `I haven't seen ${player.name} recently`;
+  }
+  const seconds = Math.max(1, Math.round((Date.now() - Number(sighting.at || 0)) / 1000));
+  return `I saw ${player.name} near ${String(sighting.roomName || "a corridor").replace(/^Castle /, "")} about ${seconds}s ago`;
+}
+
+function evidenceReasonFor(bot, player) {
+  const brain = brainFor(bot.id);
+  const eyewitness = recentEyewitnessEvidence(bot.id, player.id);
+  if (eyewitness) return `I saw ${player.name} kill ${eyewitness.victimName} in ${eyewitness.roomName}`;
+  const evidence = [...brain.evidence].reverse().find((item) => item.suspectId === player.id);
+  if (evidence?.reason) return `${player.name} ${evidence.reason}`;
+  const score = Number(brain.suspicion[player.id] || 0);
+  if (score >= BOT_HIGH_SUSPICION) return `${player.name}'s movement has been the most suspicious to me`;
+  return `I don't have strong evidence on ${player.name}`;
+}
+
 function buildBotChatReply(bot, message) {
   const text = String(message.text || "").trim();
   const lower = text.toLowerCase();
@@ -5324,67 +5910,113 @@ function buildBotChatReply(bot, message) {
   const role = state.allSecrets[bot.id]?.role;
   const sender = state.players[message.uid];
   const mentionedPlayer = playerMentionedInText(text, bot.id);
+  const botWasNamed = lower.includes(String(bot.name || "").toLowerCase());
+  brain.lastChatSenderId = message.uid || "";
 
   if (/\b(are you a bot|you are a bot|r u a bot)\b/.test(lower)) {
-    return pickBotLine(bot, ["why does everyone ask that", "I'm just playing", "maybe. what did you see?"]);
+    return pickBotLine(bot, ["I'm playing the same match you are", "focus on the evidence", "doesn't change what I saw"]);
   }
-  if (/\b(hi|hey|hello|yo)\b/.test(lower)) {
-    return pickBotLine(bot, ["yo", "hey", "sup", "what's up"]);
+  if (/\b(hi|hey|hello|yo|sup)\b/.test(lower)) {
+    return pickBotLine(bot, ["hey", "yo", "what's up?"]);
   }
-  if (/\b(where are you|where r u|what room|location)\b/.test(lower)) return botStatusReply(bot);
-  if (/\b(what are you doing|what r u doing|your task|doing what)\b/.test(lower)) return botStatusReply(bot);
+  if (/\b(what role|which role|your role|are you the)\b/.test(lower)) {
+    return "I'm not revealing my role in chat";
+  }
+  if (/\b(where are you|where r u|what room|location|your alibi|where were you)\b/.test(lower)) return botAlibiReply(bot);
+  if (/\b(what are you doing|what r u doing|your task|doing what|which task)\b/.test(lower)) return botStatusReply(bot);
 
-  if (/\b(follow me|come with me|stay with me|stick with me)\b/.test(lower) && sender?.alive) {
+  if (/\b(follow me|come with me|stay with me|stick with me|come here)\b/.test(lower) && sender?.alive) {
     brain.followTargetId = message.uid;
     brain.followUntil = Date.now() + 30000;
-    return pickBotLine(bot, ["yeah lead", "ok I'm with you", "sure, go"]);
+    return pickBotLine(bot, ["okay, lead", "coming to you", "yeah, I'll stay with you"]);
   }
-
-  if (/\b(stop following|leave me|go away)\b/.test(lower) && brain.followTargetId === message.uid) {
+  if (/\b(stop following|leave me|go away|do your own thing)\b/.test(lower) && brain.followTargetId === message.uid) {
     brain.followTargetId = "";
     brain.followUntil = 0;
-    return pickBotLine(bot, ["alr", "got it", "ok"]);
+    return pickBotLine(bot, ["okay", "got it", "I'll split off"]);
   }
 
-  const isAccusation = mentionedPlayer && /\b(sus|suspicious|killed|killer|vote|watch)\b/.test(lower);
+  if (/\b(who was with you|anyone with you|who did you see)\b/.test(lower)) {
+    const recent = Object.entries(brain.recentSightings)
+      .filter(([, sighting]) => Date.now() - Number(sighting.at || 0) <= 10000)
+      .sort((a, b) => Number(b[1]?.at || 0) - Number(a[1]?.at || 0))[0];
+    return recent ? botSightingReply(bot, state.players[recent[0]]) : "I haven't crossed anyone recently";
+  }
+
+  if (mentionedPlayer && /\b(where was|where is|seen|saw|location of|last see)\b/.test(lower)) {
+    return botSightingReply(bot, mentionedPlayer);
+  }
+
+  const accusedSelf = /\b(sus|suspicious|killer|killed|vote|chameleon)\b/.test(lower)
+    && lower.includes(String(bot.name || "").toLowerCase());
+  if (accusedSelf) {
+    if (role === "Chameleon") return pickBotLine(bot, [`that's wrong. ${botAlibiReply(bot)}`, "you're guessing. what evidence do you have?", "I didn't do it. check the routes"]);
+    return `${botAlibiReply(bot)}. What evidence do you have against me?`;
+  }
+
+  const isAccusation = mentionedPlayer && /\b(sus|suspicious|killed|killer|vote|watch|chameleon)\b/.test(lower);
   if (isAccusation && mentionedPlayer.id !== bot.id) {
     if (role !== "Chameleon") {
       rememberEvidence(bot.id, mentionedPlayer.id, 7, `was accused by ${sender?.name || "someone"}`, {
         key: `chat-claim:${message.uid}:${message.ts}:${mentionedPlayer.id}`,
       });
+      brain.lastChatSuspectId = mentionedPlayer.id;
       const eyewitness = recentEyewitnessEvidence(bot.id, mentionedPlayer.id);
-      if (eyewitness) return `yeah, I saw ${mentionedPlayer.name} do it`;
+      if (eyewitness) return `yes. I saw ${mentionedPlayer.name} kill ${eyewitness.victimName}`;
       const score = Number(brain.suspicion[mentionedPlayer.id] || 0);
-      if (score >= BOT_HIGH_SUSPICION) return `I was already watching ${mentionedPlayer.name}. could be`;
-      return pickBotLine(bot, [
-        `maybe. what did you see ${mentionedPlayer.name} do?`,
-        `I'll watch ${mentionedPlayer.name}, but that's not enough to vote yet`,
-        `where did you see ${mentionedPlayer.name}?`,
-      ]);
+      if (/\b(why|evidence|proof|how do you know)\b/.test(lower)) return evidenceReasonFor(bot, mentionedPlayer);
+      if (/\b(vote|voting)\b/.test(lower)) {
+        return score >= BOT_HIGH_SUSPICION
+          ? `I'm voting ${mentionedPlayer.name}. I already had evidence on them`
+          : `I'll consider ${mentionedPlayer.name}, but tell me exactly what you saw`;
+      }
+      return score >= BOT_HIGH_SUSPICION
+        ? `${mentionedPlayer.name} is already high on my list`
+        : `what did ${mentionedPlayer.name} do, and where?`;
     }
-    return pickBotLine(bot, [`yeah ${mentionedPlayer.name} has been weird`, `could be ${mentionedPlayer.name}`, `watching ${mentionedPlayer.name} too`]);
+    brain.lastChatSuspectId = mentionedPlayer.id;
+    return pickBotLine(bot, [`I can see that. I'm watching ${mentionedPlayer.name}`, `${mentionedPlayer.name} is worth checking`, `what room did you see ${mentionedPlayer.name} in?`]);
   }
 
-  if (/\b(who|sus|suspect|chameleon|killer|killed|murder|vote|did you see|what did you see|who do you think|who is it)\b/.test(lower)) {
+  if (/\b(are you sure|sure about that|how sure|confidence)\b/.test(lower)) {
+    const suspect = state.players[brain.lastChatSuspectId];
+    if (!suspect) return "not yet. I need more evidence";
+    const eyewitness = recentEyewitnessEvidence(bot.id, suspect.id);
+    if (eyewitness) return `completely sure. I saw ${suspect.name} do it`;
+    const score = Number(brain.suspicion[suspect.id] || 0);
+    return score >= BOT_HIGH_SUSPICION ? `fairly sure about ${suspect.name}, but it wasn't a direct witness` : `low confidence. ${suspect.name} is only my best guess`;
+  }
+
+  if (/\b(who|sus|suspect|chameleon|killer|killed|murder|vote|did you see|what did you see|who do you think|who is it|best guess)\b/.test(lower)) {
     if (mentionedPlayer && mentionedPlayer.id !== bot.id && role !== "Chameleon") {
+      brain.lastChatSuspectId = mentionedPlayer.id;
+      if (/\b(why|evidence|proof|how)\b/.test(lower)) return evidenceReasonFor(bot, mentionedPlayer);
       const eyewitness = recentEyewitnessEvidence(bot.id, mentionedPlayer.id);
       const score = Number(brain.suspicion[mentionedPlayer.id] || 0);
       if (eyewitness) return `I saw ${mentionedPlayer.name} kill ${eyewitness.victimName}`;
-      if (score >= BOT_HIGH_SUSPICION) return `${mentionedPlayer.name} is sus to me, but I didn't see a kill`;
-      return `nothing solid on ${mentionedPlayer.name}`;
+      if (score >= BOT_HIGH_SUSPICION) return `${mentionedPlayer.name} is suspicious, but I didn't witness a kill`;
+      return `I don't have enough on ${mentionedPlayer.name}`;
     }
+    const ranked = strongestSuspectForBot(bot.id);
+    if (ranked?.player) brain.lastChatSuspectId = ranked.player.id;
     return evidenceReplyFor(bot);
   }
 
-  if (/\b(help|what should we do|what do we do)\b/.test(lower)) {
-    const suspect = strongestSuspectForBot(bot.id);
-    if (suspect?.score >= BOT_HIGH_SUSPICION) return `finish tasks and don't be alone with ${suspect.player.name}`;
-    return pickBotLine(bot, ["pair up and finish tasks", "don't random vote. keep doing tasks", "stay near someone and report fast"]);
+  if (/\b(report|body|dead|found one)\b/.test(lower)) {
+    const body = nearestBody(bot, 240, false);
+    if (body) return `I see the body near ${body.roomName || locationNameFor(body)}. I'm heading there`;
+    return "I don't see a body from here. say which room";
   }
 
-  if (/\b(thanks|thank you|thx)\b/.test(lower)) return pickBotLine(bot, ["np", "yeah", "got you"]);
+  if (/\b(help|what should we do|what do we do|plan)\b/.test(lower)) {
+    const suspect = strongestSuspectForBot(bot.id);
+    if (suspect?.player) return `stay together, finish tasks, and keep an eye on ${suspect.player.name}`;
+    return "pair up, finish tasks, and call out exact rooms";
+  }
+  if (/\b(thanks|thank you|thx)\b/.test(lower)) return pickBotLine(bot, ["no problem", "yeah", "got you"]);
   if (/\b(ok|okay|alr|alright|sure)\b/.test(lower)) return null;
 
+  if (botWasNamed) return pickBotLine(bot, ["what are you asking me?", "say the player or room", "yeah?"]);
   return null;
 }
 async function maybeBotsRespondToChat(messages) {
@@ -5408,8 +6040,9 @@ async function maybeBotsRespondToChat(messages) {
   const lower = String(message.text || "").toLowerCase();
   const directlyNamed = bots.find((bot) => lower.includes(String(bot.name || "").toLowerCase()));
   const sender = state.players[message.uid];
-  const isQuestion = /\?|\b(who|what|where|why|how|did|do|are|can|sus|help|follow)\b/.test(lower);
-  if (!directlyNamed && !isQuestion && Math.random() > 0.22) return;
+  const isQuestion = /\?|\b(who|what|where|why|how|did|do|are|can|sus|help|follow|vote|evidence|proof|body|report)\b/.test(lower);
+  const actionableStatement = /\b(sus|suspicious|killed|killer|vote|body|follow me|come here)\b/.test(lower);
+  if (!directlyNamed && !isQuestion && !actionableStatement && Math.random() > 0.12) return;
 
   const candidates = directlyNamed ? [directlyNamed] : [...bots].sort((a, b) => {
     const distanceA = sender?.alive ? distance(a, sender) : 0;
@@ -5610,8 +6243,27 @@ async function runBotsInGame() {
     if (!secret?.role) continue;
     const role = secret.role;
     const brain = brainFor(bot.id);
+    brain.positionHistory.push({ at: now, x: bot.x, y: bot.y });
+    while (brain.positionHistory.length && brain.positionHistory[0].at < now - 7000) brain.positionHistory.shift();
     observeWorldForBot(bot, now);
     if ((bot.stunnedUntil || 0) > now) continue;
+
+    if (["Time Traveler", "Chameleon"].includes(role) && (bot.rewindReadyAt || 0) <= now) {
+      const threat = strongestSuspectForBot(bot.id);
+      const inDanger = threat?.score >= BOT_HIGH_SUSPICION && distance(bot, threat.player) < 105;
+      if (inDanger) {
+        const rewindPoint = [...brain.positionHistory].reverse().find((sample) => sample.at <= now - 4800);
+        if (rewindPoint && isWalkable(rewindPoint.x, rewindPoint.y)) {
+          updates[roomPath(`players/${bot.id}/x`)] = rewindPoint.x;
+          updates[roomPath(`players/${bot.id}/y`)] = rewindPoint.y;
+          updates[roomPath(`players/${bot.id}/rewindReadyAt`)] = now + 40000;
+          brain.path = [];
+          brain.pauseUntil = now + 400;
+          continue;
+        }
+      }
+    }
+
     let target = null;
 
     if (brain.followTargetId && brain.followUntil > now) {
@@ -5630,6 +6282,20 @@ async function runBotsInGame() {
     }
 
     const nearbyBody = nearestBody(bot, 145, false);
+    if (role === "Time Traveler" && nearbyBody && (bot.visionReadyAt || 0) <= now) {
+      updates[roomPath(`players/${bot.id}/visionReadyAt`)] = now + 30000;
+      const recent = Object.entries(brain.recentSightings)
+        .filter(([, sighting]) => now - Number(sighting.at || 0) <= 8000)
+        .filter(([, sighting]) => Math.hypot(sighting.x - nearbyBody.x, sighting.y - nearbyBody.y) <= 180);
+      for (const [suspectId] of recent) {
+        if (suspectId !== nearbyBody.victimId) {
+          rememberEvidence(bot.id, suspectId, 9, `crossed the victim's recent timeline near ${nearbyBody.roomName || "the body"}`, {
+            key: `time-vision:${nearbyBody.id}:${suspectId}`,
+            bodyId: nearbyBody.id,
+          });
+        }
+      }
+    }
 
     if (role === "Chef" && !bot.reviveUsed) {
       const bodies = Object.entries(state.bodies)
@@ -5667,7 +6333,7 @@ async function runBotsInGame() {
       if (witnessedBody || !target) target = nearbyBody;
     }
 
-    if (role === "Sorcerer" && Number(bot.dartsRemaining || 0) > 0 && now >= (brain.nextDartAt || 0)) {
+    if (["Sorcerer", "Chameleon"].includes(role) && Number(bot.dartsRemaining || 0) > 0 && now >= (brain.nextDartAt || 0)) {
       let dartTarget = null;
       if (nearbyBody && now - (nearbyBody.createdAt || 0) < 9000) {
         dartTarget = alivePlayers()
@@ -5750,6 +6416,15 @@ async function runBotsInGame() {
           updates[roomPath(`players/${bot.id}/invisibleUntil`)] = now + 5000;
           updates[roomPath(`players/${bot.id}/invisReadyAt`)] = now + 20000;
         }
+
+        if ((bot.sabotageReadyAt || 0) <= now && completedTaskCount() >= 8 && completedTaskCount() < TASK_GOAL
+          && Math.random() < 0.012) {
+          const sabotageRoom = ROOMS
+            .map((room) => ({ room, count: activeTaskHistoryForRoom(room.id).length }))
+            .filter((entry) => entry.count > 0)
+            .sort((a, b) => b.count - a.count)[0]?.room;
+          if (sabotageRoom) await performSabotage(bot.id, sabotageRoom.id);
+        }
       }
     } else if (TASKER_ROLES.has(role)) {
       const task = chooseBotTask(bot.id, bot, secret);
@@ -5760,7 +6435,7 @@ async function runBotsInGame() {
           const roleAdjustment = role === "Advisor" ? -350 : role === "Chef" ? 250 : 0;
           const solveTime = Math.max(2800, brain.taskSolveMs + roleAdjustment);
           if (now - brain.taskSince > solveTime) {
-            updates[roomPath(`players/${bot.id}/completedTasks/${task.assignmentId}`)] = true;
+            queueTaskCompletion(updates, bot.id, task.assignmentId, now);
             brain.taskSince = 0;
             brain.path = [];
             continue;
@@ -5880,8 +6555,8 @@ async function runBotMeetingActions() {
         const accuser = candidates.find((candidate) => Number(brain.suspicion[candidate.id] || 0) > 0);
         const deflection = accuser || ranked.find((entry) => entry.candidate.id === meeting.callerId)?.candidate || ranked[0]?.candidate;
         line = deflection
-          ? `didn't see it. where was ${deflection.name}?`
-          : "didn't see the kill. probably skip";
+          ? `I didn't see the kill. I'm leaning ${deflection.name}`
+          : "I didn't see the kill, but I'll vote my best read";
       }
       sendMessage(line, { uid: bot.id, sender: bot.name, bot: true });
     }
@@ -5892,26 +6567,12 @@ async function runBotMeetingActions() {
     }
 
     if (!meeting.votes?.[bot.id] && meeting.mutedPlayerId !== bot.id && now >= brain.voteAt) {
-      if (!candidates.length) {
-        updates[roomPath(`meeting/votes/${bot.id}`)] = ABSTAIN_VOTE;
-      } else if (role === "Chameleon") {
-        const directAccuser = candidates.find((candidate) =>
-          recentEyewitnessEvidence(candidate.id, bot.id)
-          || Number(brain.suspicion[candidate.id] || 0) > BOT_HIGH_SUSPICION
-        );
-        const deflection = directAccuser
-          || candidates.filter((candidate) => candidate.id === meeting.callerId)[0]
-          || [...candidates].sort((a, b) => Object.keys(a.completedTasks || {}).length - Object.keys(b.completedTasks || {}).length)[0];
-        updates[roomPath(`meeting/votes/${bot.id}`)] = deflection?.id || ABSTAIN_VOTE;
-      } else if (ranked[0]?.eyewitness) {
+      if (ranked[0]?.candidate) {
+        // Bots must commit to the player supported by their strongest available evidence.
         updates[roomPath(`meeting/votes/${bot.id}`)] = ranked[0].candidate.id;
-      } else if (!ranked[0] || ranked[0].score < 42) {
-        updates[roomPath(`meeting/votes/${bot.id}`)] = ABSTAIN_VOTE;
-      } else {
-        const uncertain = ranked.length > 1 && ranked[0].score - ranked[1].score < 24;
-        updates[roomPath(`meeting/votes/${bot.id}`)] = uncertain && ranked[0].score < 95
-          ? ABSTAIN_VOTE
-          : ranked[0].candidate.id;
+        brain.lastChatSuspectId = ranked[0].candidate.id;
+      } else if (candidates[0]) {
+        updates[roomPath(`meeting/votes/${bot.id}`)] = candidates[0].id;
       }
     }
 
@@ -5934,13 +6595,43 @@ async function runBotMeetingActions() {
   if (Object.keys(updates).length) await update(ref(db), updates);
 }
 
-// Keep a lightweight presence heartbeat for human players.
+async function maintainRoomLifecycle() {
+  if (!state.joined || !state.uid || state.roomCleanupBusy) return;
+  state.roomCleanupBusy = true;
+  try {
+    const humans = connectedHumanPlayers();
+    if (humans.length) {
+      await update(ref(db, roomPath("meta")), {
+        lastHumanSeenAt: serverTimestamp(),
+        emptySince: null,
+        updatedAt: serverTimestamp(),
+      });
+      return;
+    }
+    const emptySince = Number(state.meta?.emptySince || state.meta?.lastHumanSeenAt || 0);
+    if (!emptySince || Date.now() - emptySince < ROOM_EMPTY_DELETE_MS) return;
+    const botDeletes = {};
+    for (const [id, player] of Object.entries(state.players)) {
+      if (player?.isBot) botDeletes[roomPath(`players/${id}`)] = null;
+    }
+    if (Object.keys(botDeletes).length) await update(ref(db), botDeletes);
+    await Promise.all([
+      remove(ref(db, roomPath())).catch(() => {}),
+      remove(ref(db, `roomSecrets/${state.roomId}`)).catch(() => {}),
+    ]);
+  } finally {
+    state.roomCleanupBusy = false;
+  }
+}
+
+// Keep a lightweight presence heartbeat for human players and clear stale-room timers.
 setInterval(() => {
   if (!state.joined || !state.uid) return;
   update(ref(db, roomPath(`players/${state.uid}`)), {
     connected: true,
     lastSeen: serverTimestamp(),
   }).catch(() => {});
+  maintainRoomLifecycle().catch(() => {});
 }, 15000);
 
   </script>
