@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#08080d" />
-  <title>Traitor Game — Jester & New Wings</title>
+  <title>Traitor Game</title>
   <style>
 :root {
   color-scheme: dark;
@@ -348,6 +348,11 @@ button.shoot-target:active:not(:disabled) {
 .jester-card { width: min(700px, 94vw); max-height: 88vh; overflow: auto; padding: 24px; }
 .jester-target-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }
 .jester-target-button { min-height: 72px; display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 10px; text-align: left; background: rgba(139,83,193,.12); border: 1px solid rgba(196,139,255,.38); }
+.guard-card { width: min(700px, 94vw); max-height: 88vh; overflow: auto; padding: 24px; }
+.guard-target-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 16px; }
+.guard-target-button { min-height: 76px; display: grid; grid-template-columns: 38px 1fr; align-items: center; gap: 10px; text-align: left; background: rgba(78,121,177,.13); border: 1px solid rgba(128,181,245,.42); }
+.guard-target-button.king-target { border-color: rgba(244,207,80,.75); box-shadow: inset 0 0 0 1px rgba(244,207,80,.22); }
+.guard-target-swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,.55); box-shadow: 0 2px 8px rgba(0,0,0,.28); }
 .jester-target-swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,.55); box-shadow: 0 4px 10px rgba(0,0,0,.32); }
 .jester-note { color: var(--muted); line-height: 1.45; }
 
@@ -488,6 +493,7 @@ button.shoot-target:active:not(:disabled) {
             <select id="ownerRoleSelect">
               <option value="">Random</option>
               <option value="Peasant">Peasant</option>
+              <option value="Royal Guard">Royal Guard</option>
               <option value="Time Traveler">Time Traveler</option>
               <option value="Jester">Jester</option>
               <option value="Chameleon">Chameleon</option>
@@ -637,6 +643,20 @@ button.shoot-target:active:not(:disabled) {
       </div>
     </section>
 
+    <section id="guardOverlay" class="screen-overlay hidden">
+      <div class="panel guard-card">
+        <div class="meeting-heading">
+          <div>
+            <div class="eyebrow">ROYAL GUARD PROTECTION</div>
+            <h2>Choose someone to protect</h2>
+          </div>
+          <button id="closeGuardButton" class="icon-button" aria-label="Close protection menu">×</button>
+        </div>
+        <p class="jester-note">Choose a nearby living courtier. For ten seconds, the next Chameleon attack against them is blocked.</p>
+        <div id="guardTargetGrid" class="guard-target-grid"></div>
+      </div>
+    </section>
+
     <section id="dutyRequestOverlay" class="screen-overlay hidden">
       <div class="panel duty-request-card">
         <div class="eyebrow">ROYAL DUTY REQUEST</div>
@@ -743,6 +763,13 @@ const PUBLIC_ROOM_ID = "ROYALHALL";
 const TASK_GOAL = 60;
 const INITIAL_TASK_BATCH = 5;
 const SABOTAGE_COOLDOWN_MS = 45000;
+const GUARD_PROTECT_RANGE = 155;
+const GUARD_ESCORT_RANGE = 195;
+const GUARD_PASSIVE_RANGE = 130;
+const GUARD_THREAT_RANGE = 330;
+const GUARD_PROTECT_COOLDOWN_MS = 35000;
+const GUARD_ESCORT_COOLDOWN_MS = 45000;
+const GUARD_ESCORT_DURATION_MS = 8000;
 const ROOM_EMPTY_DELETE_MS = 20 * 60 * 1000;
 const HUMAN_PRESENCE_GRACE_MS = 120000;
 const ABSTAIN_VOTE = "__abstain__";
@@ -757,7 +784,7 @@ const MAIN_ROOM_SPAWNS = [
   [940, 650], [1030, 625], [1120, 620], [900, 735], [1020, 735],
 ].map(([x, y]) => ({ x: x * MAP_SCALE, y: y * MAP_SCALE }));
 const ROLE_DECK = [
-  "Peasant", "Peasant", "Time Traveler", "Jester",
+  "Peasant", "Royal Guard", "Time Traveler", "Jester",
   "Chameleon", "Mason", "King", "Advisor", "Chef", "Sorcerer",
 ];
 const OWNER_USERNAME = "sinister_mark405";
@@ -778,7 +805,7 @@ const PLAYER_SHAPES = [
   { id: "heart", symbol: "♥", label: "Heart" },
   { id: "spade", symbol: "♠", label: "Spade" },
 ];
-const TASKER_ROLES = new Set(["Peasant", "Mason", "Advisor", "Chef", "Sorcerer", "Time Traveler", "Jester"]);
+const TASKER_ROLES = new Set(["Peasant", "Royal Guard", "Mason", "Advisor", "Chef", "Sorcerer", "Time Traveler", "Jester"]);
 const SEWER_ROLES = new Set(["Mason", "Chameleon"]);
 const PLAYER_COLORS = [
   "#c95656", "#4c86c6", "#65a76b", "#bd73bd", "#d79b45",
@@ -974,6 +1001,9 @@ const ROLE_INFO = {
   Mason: {
     description: "Complete duties. You alone among the loyal court may travel through castle sewers.",
   },
+  "Royal Guard": {
+    description: "Complete duties and defend the announced King. Protect a nearby courtier from one attack, or escort the King with speed and danger warnings.",
+  },
   Chameleon: {
     description: "Eliminate the court without being exposed. Kill, vanish, rewind, reveal the map, fire stun darts, travel through sewers, and sabotage room progress.",
   },
@@ -1057,6 +1087,9 @@ const state = {
   ownerRevealActive: false,
   sabotageBusy: false,
   roomCleanupBusy: false,
+  noticedShieldClashAt: 0,
+  lastRoyalGuardHostSyncAt: 0,
+  audioContext: null,
 };
 
 function roomPath(suffix = "") {
@@ -1289,7 +1322,16 @@ function syncRestrictedUi(previousOwn = null, own = getMyPlayer()) {
   if (stunUntil > Date.now() && stunUntil !== state.noticedStunUntil) {
     state.noticedStunUntil = stunUntil;
     closeTaskGame(false);
-    showToast("You were stunned by an sorcerer dart for 5 seconds", 3000);
+    showToast("You were stunned by a sorcerer dart for 5 seconds", 3000);
+  }
+
+  const protectionUntil = Number(own?.protectedUntil || 0);
+  if (protectionUntil > Date.now() && protectionUntil !== Number(previousOwn?.protectedUntil || 0)) {
+    showToast("🛡 A Royal Guard is protecting you for 10 seconds", 3200);
+  }
+  const escortUntil = Number(own?.escortUntil || 0);
+  if (escortUntil > Date.now() && escortUntil !== Number(previousOwn?.escortUntil || 0)) {
+    showToast("Royal Escort active — movement speed increased", 3000);
   }
 
   if (previousOwn?.alive && own && !own.alive) {
@@ -1477,11 +1519,48 @@ function clearListeners() {
   state.hostSecretsUnsub = null;
 }
 
+function playShieldClashSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const audio = state.audioContext || new AudioCtx();
+    state.audioContext = audio;
+    if (audio.state === "suspended") audio.resume().catch(() => {});
+    const start = audio.currentTime;
+    [165, 245, 370].forEach((frequency, index) => {
+      const oscillator = audio.createOscillator();
+      const gain = audio.createGain();
+      oscillator.type = index === 0 ? "square" : "triangle";
+      oscillator.frequency.setValueAtTime(frequency, start);
+      oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.72, start + 0.34);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.24 / (index + 1), start + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.42);
+      oscillator.connect(gain).connect(audio.destination);
+      oscillator.start(start + index * 0.008);
+      oscillator.stop(start + 0.44);
+    });
+  } catch (error) {
+    console.warn("Shield sound unavailable", error);
+  }
+}
+
+function handleShieldClashNotice(previousMeta, nextMeta) {
+  const clashAt = Number(nextMeta?.shieldClashAt || 0);
+  if (!clashAt || clashAt === state.noticedShieldClashAt || Date.now() - clashAt > 6500) return;
+  state.noticedShieldClashAt = clashAt;
+  playShieldClashSound();
+  const targetName = nextMeta?.shieldClashTargetName || "a protected courtier";
+  showToast(`🛡 A Royal Guard blocked an attack on ${targetName}!`, 4200);
+}
+
 function beginRoomListeners() {
   clearListeners();
 
   state.listeners.push(onValue(ref(db, roomPath("meta")), (snapshot) => {
+    const previousMeta = state.meta;
     state.meta = snapshot.val() || { state: "lobby" };
+    handleShieldClashNotice(previousMeta, state.meta);
     handleMetaChange();
     renderDutyRequestOverlay();
     maybeClaimHost();
@@ -1606,6 +1685,7 @@ function handleMetaChange() {
   if (phase === "meeting") {
     setVisible("customizeOverlay", false);
     setVisible("jesterOverlay", false);
+    setVisible("guardOverlay", false);
     closeTaskGame(false);
   }
 
@@ -1615,6 +1695,7 @@ function handleMetaChange() {
     setVisible("mapOverlay", false);
     setVisible("sabotageOverlay", false);
     setVisible("jesterOverlay", false);
+    setVisible("guardOverlay", false);
     setVisible("meetingOverlay", false);
     setVisible("endOverlay", false);
   }
@@ -1940,6 +2021,15 @@ async function startGame(realParticipants) {
         shapeshiftReadyAt: role === "Jester" ? Date.now() + 5000 : 0,
         shapeshiftUntil: 0,
         shapeshiftTargetId: null,
+        protectReadyAt: role === "Royal Guard" ? Date.now() + 5000 : 0,
+        escortReadyAt: role === "Royal Guard" ? Date.now() + 8000 : 0,
+        protectedById: null,
+        protectedUntil: 0,
+        escortUntil: 0,
+        escortGuardId: null,
+        guardBoostUntil: 0,
+        royalThreatAngle: null,
+        royalThreatUntil: 0,
         seanceUsed: false,
         stunnedUntil: 0,
         lastSeen: Date.now(),
@@ -2129,6 +2219,24 @@ function renderRolePanel() {
       ready: !me.seanceUsed && Boolean(nearbySpirit) && !seanceBusy,
       disabled: !me.alive || stunned || currentPhase() !== "game" || me.seanceUsed || !nearbySpirit || seanceBusy,
     });
+  } else if (role === "Royal Guard") {
+    mobileAbilityCount = 2;
+    const protectRemaining = Math.max(0, Number(me.protectReadyAt || 0) - now);
+    const escortRemaining = Math.max(0, Number(me.escortReadyAt || 0) - now);
+    const protectedTarget = alivePlayers().find((player) => player.protectedById === state.uid && Number(player.protectedUntil || 0) > now);
+    const escortActive = Number(me.escortUntil || 0) > now;
+    addButton("1", "Protect nearby courtier", protectedTarget
+      ? `${protectedTarget.name} · ${Math.ceil((protectedTarget.protectedUntil - now) / 1000)}s`
+      : (protectRemaining ? `${Math.ceil(protectRemaining / 1000)}s` : "Ready"), useAbilityOne, {
+      ready: !protectRemaining && !protectedTarget,
+      disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(protectRemaining) || Boolean(protectedTarget),
+    });
+    addButton("2", "Royal Escort", escortActive
+      ? `${Math.ceil((me.escortUntil - now) / 1000)}s active`
+      : (escortRemaining ? `${Math.ceil(escortRemaining / 1000)}s` : "Ready near King"), useAbilityTwo, {
+      ready: !escortRemaining && !escortActive,
+      disabled: !me.alive || stunned || currentPhase() !== "game" || Boolean(escortRemaining) || escortActive,
+    });
   } else if (role === "King") {
     mobileAbilityCount = 1;
     addButton("1", "Royal Decree", currentPhase() === "meeting" ? "Choose target" : "Council only", useAbilityOne, {
@@ -2195,6 +2303,7 @@ function useAbilityOne() {
   else if (role === "Chef") useChefRevive();
   else if (role === "Mason") tryOpenNearbySewer();
   else if (role === "Sorcerer") shootSorcererDart(state.uid);
+  else if (role === "Royal Guard") openGuardProtectMenu();
   else if (role === "Jester") openJesterShapeshiftMenu();
   else if (role === "King" && currentPhase() === "meeting" && !state.meeting?.decreeBy) {
     state.decreeMode = true;
@@ -2209,6 +2318,7 @@ function useAbilityTwo() {
   if (state.secret?.role === "Chameleon") useInvisibility();
   else if (state.secret?.role === "Time Traveler") useTimeVision();
   else if (state.secret?.role === "Sorcerer") beginSeance();
+  else if (state.secret?.role === "Royal Guard") performRoyalEscort(state.uid);
 }
 
 function useAbilityThree() {
@@ -2226,6 +2336,119 @@ function useAbilityFive() {
 function useAbilitySix() {
   if (state.secret?.role === "Chameleon") openSabotageMenu();
 }
+
+function openGuardProtectMenu() {
+  const guard = getMyPlayer();
+  const now = Date.now();
+  if (state.secret?.role !== "Royal Guard" || !guard?.alive || currentPhase() !== "game") return;
+  if ((guard.stunnedUntil || 0) > now) return;
+  const remaining = Math.max(0, Number(guard.protectReadyAt || 0) - now);
+  if (remaining) {
+    showToast(`Protect ready in ${Math.ceil(remaining / 1000)}s`);
+    return;
+  }
+
+  const targets = alivePlayers()
+    .filter((player) => player.id !== state.uid && distance(state.localPos, player) <= GUARD_PROTECT_RANGE)
+    .sort((a, b) => {
+      if (a.id === state.meta?.kingId) return -1;
+      if (b.id === state.meta?.kingId) return 1;
+      return distance(state.localPos, a) - distance(state.localPos, b);
+    });
+  const grid = $("guardTargetGrid");
+  grid.replaceChildren();
+  for (const target of targets) {
+    const button = document.createElement("button");
+    button.className = `guard-target-button${target.id === state.meta?.kingId ? " king-target" : ""}`;
+    const swatch = document.createElement("span");
+    swatch.className = "guard-target-swatch";
+    swatch.style.background = normalizeCustomization(target, target.id).color;
+    const label = document.createElement("span");
+    const strong = document.createElement("strong");
+    strong.textContent = target.id === state.meta?.kingId ? `👑 ${target.name}` : (target.name || "Unknown");
+    const small = document.createElement("small");
+    small.textContent = `${Math.round(distance(state.localPos, target))} steps away · protect 10 seconds`;
+    small.style.display = "block";
+    small.style.color = "var(--muted)";
+    label.append(strong, small);
+    button.append(swatch, label);
+    button.addEventListener("click", () => performGuardProtect(state.uid, target.id));
+    grid.appendChild(button);
+  }
+  if (!targets.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No living courtier is close enough. Move nearer and try again.";
+    grid.appendChild(empty);
+  }
+  setVisible("guardOverlay", true);
+}
+
+async function performGuardProtect(guardId = state.uid, targetId = "") {
+  const now = Date.now();
+  const guard = state.players[guardId];
+  const target = state.players[targetId];
+  const role = guardId === state.uid ? state.secret?.role : state.allSecrets[guardId]?.role;
+  if (currentPhase() !== "game" || role !== "Royal Guard" || !guard?.alive || !target?.alive || guardId === targetId) return false;
+  if ((guard.stunnedUntil || 0) > now || distance(guardId === state.uid ? state.localPos : guard, target) > GUARD_PROTECT_RANGE) {
+    if (guardId === state.uid) showToast("That player is not close enough to protect");
+    return false;
+  }
+  if (Number(guard.protectReadyAt || 0) > now) return false;
+
+  if (guardId === state.uid) {
+    const cooldown = await runTransaction(ref(db, roomPath(`players/${guardId}/protectReadyAt`)), (current) => {
+      if (Number(current || 0) > now) return;
+      return now + GUARD_PROTECT_COOLDOWN_MS;
+    });
+    if (!cooldown.committed) return false;
+  }
+
+  await update(ref(db), {
+    [roomPath(`players/${guardId}/protectReadyAt`)]: now + GUARD_PROTECT_COOLDOWN_MS,
+    [roomPath(`players/${targetId}/protectedById`)]: guardId,
+    [roomPath(`players/${targetId}/protectedUntil`)]: now + 10000,
+  });
+  if (guardId === state.uid) {
+    setVisible("guardOverlay", false);
+    showToast(`Protecting ${target.name || "that courtier"} for 10 seconds`);
+  }
+  return true;
+}
+
+async function performRoyalEscort(guardId = state.uid) {
+  const now = Date.now();
+  const guard = state.players[guardId];
+  const role = guardId === state.uid ? state.secret?.role : state.allSecrets[guardId]?.role;
+  const kingId = state.meta?.kingId;
+  const king = state.players[kingId];
+  if (currentPhase() !== "game" || role !== "Royal Guard" || !guard?.alive || !king?.alive) return false;
+  if ((guard.stunnedUntil || 0) > now || distance(guardId === state.uid ? state.localPos : guard, king) > GUARD_ESCORT_RANGE) {
+    if (guardId === state.uid) showToast("Stand closer to the King to begin the escort");
+    return false;
+  }
+  if (Number(guard.escortReadyAt || 0) > now || Number(guard.escortUntil || 0) > now) return false;
+
+  if (guardId === state.uid) {
+    const cooldown = await runTransaction(ref(db, roomPath(`players/${guardId}/escortReadyAt`)), (current) => {
+      if (Number(current || 0) > now) return;
+      return now + GUARD_ESCORT_COOLDOWN_MS;
+    });
+    if (!cooldown.committed) return false;
+  }
+
+  const escortUntil = now + GUARD_ESCORT_DURATION_MS;
+  await update(ref(db), {
+    [roomPath(`players/${guardId}/escortReadyAt`)]: now + GUARD_ESCORT_COOLDOWN_MS,
+    [roomPath(`players/${guardId}/escortUntil`)]: escortUntil,
+    [roomPath(`players/${guardId}/escortGuardId`)]: guardId,
+    [roomPath(`players/${kingId}/escortUntil`)]: escortUntil,
+    [roomPath(`players/${kingId}/escortGuardId`)]: guardId,
+  });
+  if (guardId === state.uid) showToast("Royal Escort active for 8 seconds");
+  return true;
+}
+
+$("closeGuardButton").addEventListener("click", () => setVisible("guardOverlay", false));
 
 function openJesterShapeshiftMenu() {
   const me = getMyPlayer();
@@ -3998,6 +4221,17 @@ async function shootSorcererDart(shooterId = state.uid, preferredTargetId = "") 
   }
 
   const remainingAfter = Number(dartTransaction.snapshot.val() ?? 0);
+  let targetEscortUntil = Number(target.escortUntil || 0);
+  if (target.id === state.meta?.kingId) {
+    const escortSnapshot = await get(ref(db, roomPath(`players/${target.id}/escortUntil`))).catch(() => null);
+    if (escortSnapshot?.exists()) targetEscortUntil = Number(escortSnapshot.val() || 0);
+  }
+  const royalEscortBlocksDart = target.id === state.meta?.kingId && targetEscortUntil > now;
+  if (royalEscortBlocksDart) {
+    if (shooterId === state.uid) showToast(`The Royal Escort deflected your dart · ${remainingAfter} darts left`);
+    if (target.id === state.uid) showToast("Your Royal Escort deflected a stun dart");
+    return true;
+  }
   await set(ref(db, roomPath(`players/${target.id}/stunnedUntil`)), now + 5000);
   if (shooterId === state.uid) showToast(`${target.name} is stunned for 5 seconds · ${remainingAfter} darts left`);
   return true;
@@ -4018,6 +4252,31 @@ async function performKill(killerId = state.uid, preferredTargetId = "") {
     if (killerId === state.uid) showToast("No player is close enough");
     return false;
   }
+
+  {
+    // Check Firebase directly so a just-applied shield cannot be bypassed by a stale client snapshot.
+    const protection = await runTransaction(ref(db, roomPath(`players/${victim.id}/protectedUntil`)), (current) => {
+      if (Number(current || 0) <= now) return;
+      return 0;
+    });
+    if (protection.committed) {
+      const clashUpdates = {};
+      clashUpdates[roomPath(`players/${victim.id}/protectedById`)] = null;
+      clashUpdates[roomPath(`players/${killerId}/stunnedUntil`)] = now + 2000;
+      clashUpdates[roomPath(`players/${killerId}/killReadyAt`)] = now + 10000;
+      clashUpdates[roomPath("meta/shieldClashAt")] = now;
+      clashUpdates[roomPath("meta/shieldClashTargetName")] = victim.name || "a protected courtier";
+      await update(ref(db), clashUpdates);
+      await sendMessage(`A Royal Guard blocked an assassination attempt against ${victim.name || "a courtier"}!`, {
+        system: true,
+        sender: "Castle Herald",
+        uid: "system",
+      });
+      if (killerId === state.uid) showToast("Your attack struck a Royal Guard's shield — stunned for 2 seconds", 3400);
+      return false;
+    }
+  }
+
   const bodyId = randomId("body");
   const witnesses = {};
   const nearbyAtDeath = {};
@@ -4811,6 +5070,13 @@ async function resetToLobby() {
       updates[roomPath(`players/${id}/seanceUsed`)] = false;
       updates[roomPath(`players/${id}/shapeshiftUntil`)] = 0;
       updates[roomPath(`players/${id}/shapeshiftTargetId`)] = null;
+      updates[roomPath(`players/${id}/protectedUntil`)] = 0;
+      updates[roomPath(`players/${id}/protectedById`)] = null;
+      updates[roomPath(`players/${id}/escortUntil`)] = 0;
+      updates[roomPath(`players/${id}/escortGuardId`)] = null;
+      updates[roomPath(`players/${id}/guardBoostUntil`)] = 0;
+      updates[roomPath(`players/${id}/royalThreatUntil`)] = 0;
+      updates[roomPath(`players/${id}/royalThreatAngle`)] = null;
       updates[roomPath(`players/${id}/x`)] = 590 + Math.random() * 100;
       updates[roomPath(`players/${id}/y`)] = 555 + Math.random() * 70;
     }
@@ -4854,7 +5120,10 @@ function updateMovement(deltaSeconds) {
   const length = Math.hypot(dx, dy) || 1;
   dx /= length;
   dy /= length;
-  const speed = phase === "lobby" ? 220 : me.alive ? 205 : 245;
+  let speed = phase === "lobby" ? 220 : me.alive ? 205 : 245;
+  const now = Date.now();
+  if (phase === "game" && me.alive && Number(me.escortUntil || 0) > now) speed *= 1.15;
+  if (phase === "game" && me.alive && state.secret?.role === "King" && Number(me.guardBoostUntil || 0) > now) speed *= 1.06;
   const stepX = dx * speed * deltaSeconds;
   const stepY = dy * speed * deltaSeconds;
 
@@ -5106,6 +5375,7 @@ window.addEventListener("keydown", (event) => {
     setVisible("sewerOverlay", false);
     setVisible("sabotageOverlay", false);
     setVisible("jesterOverlay", false);
+    setVisible("guardOverlay", false);
     setVisible("customizeOverlay", false);
     if (state.chatOpen) openChat();
   }
@@ -5896,6 +6166,41 @@ function drawRoleTexture(context, role, now = Date.now()) {
     context.beginPath(); context.moveTo(30, -3); context.lineTo(34, 29); context.stroke();
     context.fillStyle = "#f4d15b";
     context.beginPath(); context.arc(29, -7, 6, 0, Math.PI * 2); context.fill();
+  } else if (role === "Royal Guard") {
+    // Self-only silver plate armor, blue cape, shield, and helmet plume.
+    context.fillStyle = "rgba(77,112,168,.9)";
+    context.beginPath();
+    context.moveTo(-20, -8); context.lineTo(-34, 31); context.lineTo(-5, 24); context.closePath();
+    context.fill();
+    context.fillStyle = "#bfc7d4";
+    context.strokeStyle = "#eef2f8";
+    context.lineWidth = 2;
+    drawRoundedRect(context, -21, -18, 42, 42, 8); context.fill(); context.stroke();
+    context.fillStyle = "#7d8797";
+    context.fillRect(-17, -8, 34, 5);
+    context.fillRect(-15, 4, 30, 4);
+    context.fillStyle = "#aeb7c5";
+    context.beginPath(); context.arc(0, -37, 18, Math.PI, Math.PI * 2); context.fill();
+    context.fillRect(-18, -38, 36, 13);
+    context.strokeStyle = "#e9eef6";
+    context.strokeRect(-17, -37, 34, 11);
+    context.fillStyle = "#426da8";
+    context.beginPath();
+    context.moveTo(0, -55); context.quadraticCurveTo(13, -70, 23, -57); context.quadraticCurveTo(12, -57, 3, -46); context.closePath();
+    context.fill();
+    context.save();
+    context.translate(-31, 7);
+    context.fillStyle = "#647287";
+    context.strokeStyle = "#dce5ef";
+    context.lineWidth = 2.5;
+    context.beginPath();
+    context.moveTo(0, -18); context.quadraticCurveTo(-16, -9, -12, 15); context.quadraticCurveTo(0, 29, 12, 15); context.quadraticCurveTo(16, -9, 0, -18); context.closePath();
+    context.fill(); context.stroke();
+    context.fillStyle = "#d8b84e";
+    context.font = "900 16px Georgia";
+    context.textAlign = "center";
+    context.fillText("♛", 0, 7);
+    context.restore();
   } else if (role === "Advisor") {
     context.strokeStyle = "#d9d2ff";
     context.lineWidth = 2;
@@ -6084,6 +6389,36 @@ function drawPlayers(context, phase) {
     context.translate(x, y);
     drawCourtier(context, displayPlayer, isMe, player.alive, player.invisibleUntil > now && isMe ? 0.3 : 1);
     if (isMe && phase !== "lobby") drawRoleTexture(context, state.secret?.role, now);
+    if (player.alive && Number(player.protectedUntil || 0) > now) {
+      const pulse = 36 + Math.sin(now / 120) * 3;
+      context.strokeStyle = "rgba(151,210,255,.88)";
+      context.lineWidth = 4;
+      context.beginPath(); context.arc(0, -7, pulse, 0, Math.PI * 2); context.stroke();
+      context.fillStyle = "rgba(205,235,255,.94)";
+      context.font = "900 19px system-ui";
+      context.textAlign = "center";
+      context.fillText("🛡", 0, -78);
+    }
+    if (state.secret?.role === "Royal Guard" && id === state.meta?.kingId && player.alive
+      && distance(state.localPos, player) <= GUARD_PASSIVE_RANGE) {
+      context.fillStyle = "#f6df78";
+      context.font = "900 20px system-ui";
+      context.textAlign = "center";
+      context.fillText("🛡", 24, -58);
+    }
+    if (isMe && state.secret?.role === "Royal Guard" && Number(player.royalThreatUntil || 0) > now
+      && Number.isFinite(Number(player.royalThreatAngle))) {
+      context.save();
+      context.rotate(Number(player.royalThreatAngle));
+      context.translate(58, 0);
+      context.fillStyle = "rgba(239,83,83,.95)";
+      context.beginPath(); context.moveTo(14, 0); context.lineTo(-7, -9); context.lineTo(-7, 9); context.closePath(); context.fill();
+      context.restore();
+      context.fillStyle = "#ffb2a8";
+      context.font = "900 11px system-ui";
+      context.textAlign = "center";
+      context.fillText("DANGER", 0, 60);
+    }
     if (isMe && state.rewindFlashUntil > now) {
       const radius = 34 + (state.rewindFlashUntil - now) / 28;
       context.strokeStyle = "rgba(99,255,220,.75)";
@@ -6253,6 +6588,9 @@ function brainFor(id) {
       positionHistory: [],
       lastChatSuspectId: "",
       lastChatSenderId: "",
+      nextProtectAt: 0,
+      nextEscortAt: 0,
+      lastEscortMeetingAt: 0,
     });
   }
   return state.botBrains.get(id);
@@ -6814,6 +7152,38 @@ function chooseWanderTarget(id) {
   return brain.wanderTarget;
 }
 
+function queueRoyalGuardHostEffects(updates, now) {
+  if (now - Number(state.lastRoyalGuardHostSyncAt || 0) < 650) return;
+  state.lastRoyalGuardHostSyncAt = now;
+  const guardEntry = Object.entries(state.allSecrets || {}).find(([, secret]) => secret?.role === "Royal Guard");
+  const chameleonEntry = Object.entries(state.allSecrets || {}).find(([, secret]) => secret?.role === "Chameleon");
+  const kingId = state.meta?.kingId;
+  const king = state.players[kingId];
+  if (!guardEntry || !king?.alive) return;
+  const [guardId] = guardEntry;
+  const guard = state.players[guardId];
+  if (!guard?.alive) {
+    if (Number(king.guardBoostUntil || 0) > 0) updates[roomPath(`players/${kingId}/guardBoostUntil`)] = 0;
+    return;
+  }
+
+  const closeEnough = distance(guard, king) <= GUARD_PASSIVE_RANGE;
+  const desiredBoostUntil = closeEnough ? now + 1100 : 0;
+  if (closeEnough || Number(king.guardBoostUntil || 0) > now) {
+    updates[roomPath(`players/${kingId}/guardBoostUntil`)] = desiredBoostUntil;
+  }
+
+  const chameleon = chameleonEntry ? state.players[chameleonEntry[0]] : null;
+  const escortActive = Number(guard.escortUntil || 0) > now;
+  if (escortActive && chameleon?.alive && distance(guard, chameleon) <= GUARD_THREAT_RANGE) {
+    updates[roomPath(`players/${guardId}/royalThreatAngle`)] = Math.atan2(chameleon.y - guard.y, chameleon.x - guard.x);
+    updates[roomPath(`players/${guardId}/royalThreatUntil`)] = now + 1100;
+  } else if (Number(guard.royalThreatUntil || 0) > now) {
+    updates[roomPath(`players/${guardId}/royalThreatUntil`)] = 0;
+    updates[roomPath(`players/${guardId}/royalThreatAngle`)] = null;
+  }
+}
+
 async function hostBotTick() {
   if (!isHost() || state.hostTickBusy) return;
   state.hostTickBusy = true;
@@ -6839,6 +7209,7 @@ async function runBotsInGame() {
   const updates = {};
   const now = Date.now();
   const bots = activePlayers().filter((player) => player.isBot && player.alive);
+  queueRoyalGuardHostEffects(updates, now);
 
   for (const bot of bots) {
     const secret = state.allSecrets[bot.id];
@@ -6867,6 +7238,38 @@ async function runBotsInGame() {
     }
 
     let target = null;
+
+    if (role === "Royal Guard") {
+      const king = state.players[state.meta?.kingId];
+      const chameleonEntry = Object.entries(state.allSecrets || {}).find(([, roleSecret]) => roleSecret?.role === "Chameleon");
+      const chameleon = chameleonEntry ? state.players[chameleonEntry[0]] : null;
+      if (king?.alive) {
+        const kingThreatened = chameleon?.alive && distance(king, chameleon) <= 285;
+        const afterMeeting = Number(state.meta?.lastMeetingAt || 0) > Number(state.meta?.startedAt || 0) + 1000
+          && now - Number(state.meta?.lastMeetingAt || 0) < 9000;
+        if (distance(bot, king) > 175 || kingThreatened) {
+          const angle = (hashNumber(`${bot.id}:royal-guard`) % 628) / 100;
+          target = { x: king.x + Math.cos(angle) * 58, y: king.y + Math.sin(angle) * 58 };
+        }
+        if (kingThreatened && distance(bot, king) <= GUARD_PROTECT_RANGE
+          && Number(bot.protectReadyAt || 0) <= now && now >= Number(brain.nextProtectAt || 0)) {
+          const protectedKing = await performGuardProtect(bot.id, king.id);
+          if (protectedKing) brain.nextProtectAt = now + GUARD_PROTECT_COOLDOWN_MS;
+        }
+        if ((kingThreatened || (afterMeeting && brain.lastEscortMeetingAt !== Number(state.meta?.lastMeetingAt || 0)))
+          && distance(bot, king) <= GUARD_ESCORT_RANGE
+          && Number(bot.escortReadyAt || 0) <= now && now >= Number(brain.nextEscortAt || 0)) {
+          const escorted = await performRoyalEscort(bot.id);
+          if (escorted) {
+            brain.nextEscortAt = now + GUARD_ESCORT_COOLDOWN_MS;
+            if (afterMeeting) brain.lastEscortMeetingAt = Number(state.meta?.lastMeetingAt || 0);
+          }
+        }
+      } else {
+        const suspect = strongestSuspectForBot(bot.id);
+        if (suspect?.player?.alive) target = suspect.player;
+      }
+    }
 
     if (brain.followTargetId && brain.followUntil > now) {
       const leader = state.players[brain.followTargetId];
@@ -7110,7 +7513,9 @@ async function runBotsInGame() {
     }
 
     const paused = now < Number(brain.pauseUntil || 0);
-    const speed = role === "Chameleon" ? brain.moveSpeed + 7 : brain.moveSpeed;
+    let speed = role === "Chameleon" ? brain.moveSpeed + 7 : brain.moveSpeed;
+    if (Number(bot.escortUntil || 0) > now) speed *= 1.15;
+    if (role === "King" && Number(bot.guardBoostUntil || 0) > now) speed *= 1.06;
     const next = paused ? { x: bot.x, y: bot.y } : moveBotToward(bot.id, bot, target, speed);
     updates[roomPath(`players/${bot.id}/x`)] = next.x;
     updates[roomPath(`players/${bot.id}/y`)] = next.y;
