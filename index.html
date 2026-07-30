@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#08080d" />
-  <title>Traitor Game</title>
+  <title>Traitor Game — Jester & New Wings</title>
   <style>
 :root {
   color-scheme: dark;
@@ -345,8 +345,57 @@ button.shoot-target:active:not(:disabled) {
 .sabotage-room-button small { color: var(--muted); }
 .sabotage-room-button:disabled { opacity: .38; }
 
+.jester-card { width: min(700px, 94vw); max-height: 88vh; overflow: auto; padding: 24px; }
+.jester-target-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }
+.jester-target-button { min-height: 72px; display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 10px; text-align: left; background: rgba(139,83,193,.12); border: 1px solid rgba(196,139,255,.38); }
+.jester-target-swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,.55); box-shadow: 0 4px 10px rgba(0,0,0,.32); }
+.jester-note { color: var(--muted); line-height: 1.45; }
+
+.mirror-game { width: min(540px, 88vw); display: grid; gap: 14px; }
+.mirror-board-wrap { display: grid; grid-template-columns: 56px 1fr 56px; align-items: center; gap: 8px; }
+.mirror-endpoint { min-height: 58px; display: grid; place-items: center; border-radius: 12px; color: #fff3b0; background: rgba(240,201,75,.11); border: 1px solid rgba(240,201,75,.34); font-size: 25px; }
+.mirror-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 10px; border-radius: 14px; background: radial-gradient(circle, rgba(72,128,164,.22), rgba(9,16,24,.86)); border: 2px solid rgba(145,218,255,.24); }
+.mirror-cell { position: relative; aspect-ratio: 1; min-width: 0; display: grid; place-items: center; border-radius: 8px; color: rgba(255,255,255,.34); background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.08); font-size: 13px; }
+.mirror-cell.beam { color: #fff7bd; background: rgba(240,201,75,.17); box-shadow: inset 0 0 18px rgba(255,223,91,.25); }
+.mirror-piece { width: 100%; height: 100%; padding: 0; display: grid; place-items: center; color: #dff8ff; background: rgba(89,167,196,.15); border: 1px solid rgba(171,233,255,.36); font-size: clamp(21px, 5vw, 34px); text-shadow: 0 0 10px rgba(156,229,255,.65); }
+.mirror-piece.beam { color: #fff4a0; border-color: rgba(255,229,120,.7); }
+.mirror-key { display: flex; justify-content: center; gap: 18px; color: var(--muted); font-size: 12px; }
+
+.cup-board { position: relative; width: min(440px, 84vw); height: 190px; overflow: hidden; border-radius: 16px; background: linear-gradient(180deg, rgba(83,52,28,.35), rgba(25,18,13,.72)); border: 2px solid rgba(212,167,99,.25); }
+.rune-cup { position: absolute; left: 20px; top: 46px; width: 78px; height: 108px; padding: 0; transition: transform .28s ease-in-out; background: transparent; border: 0; box-shadow: none; }
+.rune-cup:hover:not(:disabled), .rune-cup:active:not(:disabled) { transform: var(--cup-transform) !important; }
+.rune-cup-shell { position: absolute; z-index: 2; inset: 18px 5px 5px; display: grid; place-items: center; border-radius: 42% 42% 18% 18%; color: #f1d7a7; background: linear-gradient(145deg, #9a5b2d, #4e2a17); border: 3px solid #d49a58; font-size: 36px; box-shadow: 0 12px 18px rgba(0,0,0,.35); transition: transform .22s ease; }
+.rune-cup.revealing .rune-cup-shell { transform: translateY(-34px); }
+.rune-cup-rune { position: absolute; z-index: 1; left: 50%; top: 82px; transform: translateX(-50%); color: #8affd5; font-size: 30px; text-shadow: 0 0 14px rgba(78,255,203,.8); transition: opacity .18s; }
+.rune-cup-rune.hidden-rune { opacity: 0; }
+.cup-table-line { position: absolute; left: 12px; right: 12px; bottom: 27px; height: 4px; border-radius: 999px; background: rgba(224,179,111,.38); }
+
+.letter-game { width: 100%; display: grid; gap: 16px; }
+.letter-row { display: grid; grid-template-columns: repeat(4, minmax(85px, 1fr)); gap: 8px; }
+.royal-letter { min-height: 124px; padding: 10px 7px; display: grid; grid-template-rows: 1fr auto; place-items: center; gap: 8px; color: #3d2d1c; background: linear-gradient(145deg, #f4e5bd, #c8a96f); border: 2px solid #f7d98a; box-shadow: inset 0 0 18px rgba(83,50,20,.18); }
+.royal-letter strong { font-size: 29px; }
+.royal-letter.sealed { box-shadow: 0 0 0 3px rgba(105,211,134,.34), inset 0 0 18px rgba(83,50,20,.18); }
+.royal-letter small { font-size: 10px; font-weight: 900; letter-spacing: .04em; }
+.seal-tray { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+.wax-seal { aspect-ratio: 1; padding: 0; display: grid; place-items: center; border-radius: 50%; color: #ffd8ca; background: radial-gradient(circle at 35% 30%, #d55b5b, #771f2b 72%); border: 3px solid #e58b78; font-size: 29px; box-shadow: 0 8px 15px rgba(0,0,0,.3); }
+.wax-seal.selected { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+.treasury-game { width: min(540px, 88vw); display: grid; gap: 14px; }
+.treasury-scale { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: end; }
+.scale-pan { min-height: 112px; display: grid; place-items: center; gap: 5px; padding: 12px; border-radius: 14px 14px 35px 35px; background: rgba(240,201,75,.08); border: 3px solid rgba(240,201,75,.38); }
+.scale-pan strong { font-size: 30px; color: var(--gold-2); }
+.scale-post { width: 12px; height: 130px; border-radius: 8px 8px 0 0; background: linear-gradient(180deg, #f2d374, #88651d); box-shadow: 0 0 0 4px rgba(240,201,75,.12); }
+.treasure-pieces { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.treasure-piece { min-height: 70px; display: grid; place-items: center; gap: 2px; padding: 8px 4px; background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.12); font-size: 27px; }
+.treasure-piece small { color: var(--muted); font-size: 10px; }
+.treasure-piece.selected { color: #241b05; background: var(--gold); border-color: #fff1ac; }
+
 @media (max-width: 620px) {
   .sort-bins, .rune-sort-bins { grid-template-columns: repeat(3, 1fr); }
+  .letter-row, .seal-tray { grid-template-columns: repeat(2, 1fr); }
+  .treasure-pieces { grid-template-columns: repeat(3, 1fr); }
+  .mirror-board-wrap { grid-template-columns: 42px 1fr 42px; }
+  .mirror-endpoint { font-size: 19px; }
 }
 
 @media (max-width: 760px) {
@@ -440,6 +489,7 @@ button.shoot-target:active:not(:disabled) {
               <option value="">Random</option>
               <option value="Peasant">Peasant</option>
               <option value="Time Traveler">Time Traveler</option>
+              <option value="Jester">Jester</option>
               <option value="Chameleon">Chameleon</option>
               <option value="Mason">Mason</option>
               <option value="King">King</option>
@@ -573,6 +623,20 @@ button.shoot-target:active:not(:disabled) {
       </div>
     </section>
 
+    <section id="jesterOverlay" class="screen-overlay hidden">
+      <div class="panel jester-card">
+        <div class="meeting-heading">
+          <div>
+            <div class="eyebrow">JESTER SHAPESHIFT</div>
+            <h2>Borrow another identity</h2>
+          </div>
+          <button id="closeJesterButton" class="icon-button" aria-label="Close shapeshift menu">×</button>
+        </div>
+        <p class="jester-note">Choose a living player. For ten seconds, everyone else sees their username and appearance on you.</p>
+        <div id="jesterTargetGrid" class="jester-target-grid"></div>
+      </div>
+    </section>
+
     <section id="dutyRequestOverlay" class="screen-overlay hidden">
       <div class="panel duty-request-card">
         <div class="eyebrow">ROYAL DUTY REQUEST</div>
@@ -685,7 +749,7 @@ const ABSTAIN_VOTE = "__abstain__";
 const SEWER_TRAVEL_RANGE = 950;
 const MAP_SCALE = 1.45;
 const LOBBY_SIZE = { width: 1200, height: 700 };
-const WORLD_SIZE = { width: 1900 * MAP_SCALE, height: 1200 * MAP_SCALE };
+const WORLD_SIZE = { width: 2420 * MAP_SCALE, height: 1200 * MAP_SCALE };
 const LOBBY_PAD = { x: 480, y: 245, w: 240, h: 175 };
 const LEVER = { x: 950 * MAP_SCALE, y: 570 * MAP_SCALE, radius: 34 };
 const MAIN_ROOM_SPAWNS = [
@@ -693,7 +757,7 @@ const MAIN_ROOM_SPAWNS = [
   [940, 650], [1030, 625], [1120, 620], [900, 735], [1020, 735],
 ].map(([x, y]) => ({ x: x * MAP_SCALE, y: y * MAP_SCALE }));
 const ROLE_DECK = [
-  "Peasant", "Peasant", "Peasant", "Time Traveler",
+  "Peasant", "Peasant", "Time Traveler", "Jester",
   "Chameleon", "Mason", "King", "Advisor", "Chef", "Sorcerer",
 ];
 const OWNER_USERNAME = "sinister_mark405";
@@ -714,7 +778,7 @@ const PLAYER_SHAPES = [
   { id: "heart", symbol: "♥", label: "Heart" },
   { id: "spade", symbol: "♠", label: "Spade" },
 ];
-const TASKER_ROLES = new Set(["Peasant", "Mason", "Advisor", "Chef", "Sorcerer", "Time Traveler"]);
+const TASKER_ROLES = new Set(["Peasant", "Mason", "Advisor", "Chef", "Sorcerer", "Time Traveler", "Jester"]);
 const SEWER_ROLES = new Set(["Mason", "Chameleon"]);
 const PLAYER_COLORS = [
   "#c95656", "#4c86c6", "#65a76b", "#bd73bd", "#d79b45",
@@ -748,6 +812,8 @@ const ROOMS = [
   { id: "dungeon", name: "Dungeon", x: 110, y: 850, w: 430, h: 260 },
   { id: "alchemy", name: "Wizard Tower", x: 750, y: 855, w: 400, h: 260 },
   { id: "courtyard", name: "Royal Garden", x: 1360, y: 850, w: 430, h: 260 },
+  { id: "watchtower", name: "Watch Tower", x: 1900, y: 90, w: 420, h: 270 },
+  { id: "kingsquarters", name: "King's Quarters", x: 1900, y: 455, w: 420, h: 280 },
 ];
 
 const ROOM_THEMES = {
@@ -760,6 +826,8 @@ const ROOM_THEMES = {
   dungeon: { top: "#44474e", bottom: "#202227", border: "#777d89", floor: "cell", badge: "#d7dbe4", trim: "#515762" },
   alchemy: { top: "#5e4276", bottom: "#2d223a", border: "#aa8fd1", floor: "arcane", badge: "#edd8ff", trim: "#7855a1" },
   courtyard: { top: "#4d6c44", bottom: "#243526", border: "#8fbd7f", floor: "garden", badge: "#dff5c9", trim: "#5f8654" },
+  watchtower: { top: "#3f6070", bottom: "#1d303c", border: "#8fc8dd", floor: "tower", badge: "#d8f4ff", trim: "#517b8f" },
+  kingsquarters: { top: "#77404f", bottom: "#3d1c2c", border: "#d8b75d", floor: "royal", badge: "#ffe59a", trim: "#98566b" },
 };
 
 
@@ -774,6 +842,9 @@ const CORRIDORS = [
   { x: 890, y: 760, w: 120, h: 135 },
   { x: 250, y: 695, w: 140, h: 195 },
   { x: 1510, y: 695, w: 140, h: 195 },
+  { x: 1750, y: 170, w: 190, h: 110 },
+  { x: 1750, y: 540, w: 190, h: 110 },
+  { x: 2040, y: 330, w: 120, h: 165 },
 ];
 
 const TASKS = [
@@ -795,6 +866,10 @@ const TASKS = [
   { id: "sort_herbs", name: "Sort the sorcerer's runes", icon: "🌿", room: "alchemy", x: 1060, y: 1050 },
   { id: "draw_water", name: "Shoot the garden pests", icon: "🎯", room: "courtyard", x: 1480, y: 970 },
   { id: "trim_hedges", name: "Clean the garden debris", icon: "🧹", room: "courtyard", x: 1700, y: 1040 },
+  { id: "align_signal_mirrors", name: "Align the signal mirrors", icon: "🔭", room: "watchtower", x: 2015, y: 185 },
+  { id: "track_rune_cups", name: "Track the hidden rune", icon: "🥤", room: "watchtower", x: 2205, y: 285 },
+  { id: "seal_royal_letters", name: "Seal the royal letters", icon: "✉", room: "kingsquarters", x: 2015, y: 565 },
+  { id: "balance_royal_treasury", name: "Balance the royal treasury", icon: "⚖", room: "kingsquarters", x: 2205, y: 665 },
 ];
 
 const SEWERS = [
@@ -873,10 +948,15 @@ const TASK_GAME_TYPES = {
   lock_cells: "draw",
   mix_tonic: "draw",
   light_braziers: "draw",
+  // Watch Tower and King's Quarters — one unique minigame each
+  align_signal_mirrors: "mirrors",
+  track_rune_cups: "cups",
+  seal_royal_letters: "letters",
+  balance_royal_treasury: "treasury",
 };
 
 (function validateTaskGameDistribution() {
-  const expected = { timing: 3, shield: 1, sequence: 2, memory: 2, sweep: 2, shoot: 2, sort: 2, wire: 1, draw: 3 };
+  const expected = { timing: 3, shield: 1, sequence: 2, memory: 2, sweep: 2, shoot: 2, sort: 2, wire: 1, draw: 3, mirrors: 1, cups: 1, letters: 1, treasury: 1 };
   const actual = {};
   for (const task of TASKS) {
     const type = TASK_GAME_TYPES[task.id];
@@ -911,6 +991,9 @@ const ROLE_INFO = {
   },
   "Time Traveler": {
     description: "Complete duties. Rewind yourself to where you stood five seconds ago, and reveal eight seconds of movement trails with Time Vision.",
+  },
+  Jester: {
+    description: "A neutral trickster. Win by being banished during a council. Shapeshift into another living player's username and appearance for ten seconds.",
   },
 };
 
@@ -1495,6 +1578,9 @@ function handleMetaChange() {
       state.controlsVisible = false;
       state.tasksVisible = false;
       setTimeout(() => showToast("Press P for controls and T for duties", 3200), 250);
+      if (state.meta?.kingName) {
+        setTimeout(() => showToast(`👑 ${state.meta.kingName} is the King — protect the crown!`, 6000), 700);
+      }
     }
     if (phase === "lobby" || phase === "ended") {
       state.controlsVisible = false;
@@ -1519,6 +1605,7 @@ function handleMetaChange() {
   if (phase !== "meeting") state.decreeMode = false;
   if (phase === "meeting") {
     setVisible("customizeOverlay", false);
+    setVisible("jesterOverlay", false);
     closeTaskGame(false);
   }
 
@@ -1527,16 +1614,20 @@ function handleMetaChange() {
     state.mapVisibleUntil = 0;
     setVisible("mapOverlay", false);
     setVisible("sabotageOverlay", false);
+    setVisible("jesterOverlay", false);
     setVisible("meetingOverlay", false);
     setVisible("endOverlay", false);
   }
 
   if (phase === "ended") {
     const loyalistsWon = state.meta?.winner === "loyalists";
-    $("endTitle").textContent = loyalistsWon ? "The Castle Is Saved" : "The Chameleon Prevails";
-    $("endText").textContent = state.meta?.endText || (loyalistsWon
-      ? "The loyal court exposed the Chameleon."
-      : "The Chameleon seized control of the castle.");
+    const jesterWon = state.meta?.winner === "jester";
+    $("endTitle").textContent = jesterWon ? "The Jester Fooled the Court" : (loyalistsWon ? "The Castle Is Saved" : "The Chameleon Prevails");
+    $("endText").textContent = state.meta?.endText || (jesterWon
+      ? "The Jester won by convincing the council to banish them."
+      : loyalistsWon
+        ? "The loyal court exposed the Chameleon."
+        : "The Chameleon seized control of the castle.");
     $("returnLobbyButton").disabled = !isHost();
     $("returnLobbyButton").textContent = isHost() ? "Return everyone to lobby" : "Waiting for the host";
   }
@@ -1846,6 +1937,9 @@ async function startGame(realParticipants) {
         reviveUsed: false,
         dartsRemaining: (role === "Sorcerer" || role === "Chameleon") ? 5 : 0,
         sabotageReadyAt: role === "Chameleon" ? Date.now() + 9000 : 0,
+        shapeshiftReadyAt: role === "Jester" ? Date.now() + 5000 : 0,
+        shapeshiftUntil: 0,
+        shapeshiftTargetId: null,
         seanceUsed: false,
         stunnedUntil: 0,
         lastSeen: Date.now(),
@@ -1868,12 +1962,19 @@ async function startGame(realParticipants) {
     updates[roomPath("meeting")] = null;
     updates[roomPath("seance")] = null;
     updates[roomPath("taskHistory")] = null;
+    const kingIndex = roles.indexOf("King");
+    const kingId = allIds[kingIndex];
+    const kingSource = participantLookup[kingId] || state.players[kingId] || {};
+    const kingName = kingId?.startsWith("bot_") ? botNameFor(kingId, kingIndex) : (kingSource.name || "The King");
+
     updates[roomPath("meta")] = {
       ...state.meta,
       state: "game",
       matchId,
       startedAt: Date.now(),
       lastMeetingAt: Date.now(),
+      kingId,
+      kingName,
       totalTasks: TASK_GOAL,
       tasksIssued,
       winner: null,
@@ -1887,6 +1988,13 @@ async function startGame(realParticipants) {
 
     await update(ref(db), updates);
     await sendMessage(`The castle gates have closed. ${botCount} empty seat${botCount === 1 ? " was" : "s were"} filled by AI courtiers who remember witnesses and chat evidence.`, {
+      system: true,
+      sender: "Castle Herald",
+      uid: "system",
+      channel: "game",
+      matchId,
+    });
+    await sendMessage(`Hear ye! ${kingName} is the King. Protect the crown at all costs.`, {
       system: true,
       sender: "Castle Herald",
       uid: "system",
@@ -2027,6 +2135,14 @@ function renderRolePanel() {
       ready: currentPhase() === "meeting" && !state.meeting?.decreeBy,
       disabled: !me.alive || currentPhase() !== "meeting" || Boolean(state.meeting?.decreeBy),
     });
+  } else if (role === "Jester") {
+    mobileAbilityCount = 1;
+    const remaining = Math.max(0, Number(me.shapeshiftReadyAt || 0) - now);
+    const active = Number(me.shapeshiftUntil || 0) > now;
+    addButton("1", "Shapeshift", active ? `${Math.ceil((me.shapeshiftUntil - now) / 1000)}s active` : (remaining ? `${Math.ceil(remaining / 1000)}s` : "Ready"), useAbilityOne, {
+      ready: !active && !remaining,
+      disabled: !me.alive || stunned || currentPhase() !== "game" || active || Boolean(remaining),
+    });
   }
 
   [1, 2, 3, 4, 5, 6].forEach((number) => {
@@ -2079,6 +2195,7 @@ function useAbilityOne() {
   else if (role === "Chef") useChefRevive();
   else if (role === "Mason") tryOpenNearbySewer();
   else if (role === "Sorcerer") shootSorcererDart(state.uid);
+  else if (role === "Jester") openJesterShapeshiftMenu();
   else if (role === "King" && currentPhase() === "meeting" && !state.meeting?.decreeBy) {
     state.decreeMode = true;
     showToast("Royal Decree ready — choose a player to silence");
@@ -2109,6 +2226,78 @@ function useAbilityFive() {
 function useAbilitySix() {
   if (state.secret?.role === "Chameleon") openSabotageMenu();
 }
+
+function openJesterShapeshiftMenu() {
+  const me = getMyPlayer();
+  const now = Date.now();
+  if (state.secret?.role !== "Jester" || !me?.alive || currentPhase() !== "game") return;
+  if ((me.stunnedUntil || 0) > now) return;
+  if (Number(me.shapeshiftUntil || 0) > now) {
+    showToast("Your disguise is already active");
+    return;
+  }
+  const remaining = Math.max(0, Number(me.shapeshiftReadyAt || 0) - now);
+  if (remaining) {
+    showToast(`Shapeshift ready in ${Math.ceil(remaining / 1000)}s`);
+    return;
+  }
+  const grid = $("jesterTargetGrid");
+  grid.replaceChildren();
+  for (const target of alivePlayers().filter((player) => player.id !== state.uid)) {
+    const button = document.createElement("button");
+    button.className = "jester-target-button";
+    const swatch = document.createElement("span");
+    swatch.className = "jester-target-swatch";
+    swatch.style.background = normalizeCustomization(target, target.id).color;
+    const label = document.createElement("span");
+    const strong = document.createElement("strong");
+    strong.textContent = target.name || "Unknown";
+    const small = document.createElement("small");
+    small.textContent = "Copy for 10 seconds";
+    small.style.display = "block";
+    small.style.color = "var(--muted)";
+    label.append(strong, small);
+    button.append(swatch, label);
+    button.addEventListener("click", () => performJesterShapeshift(state.uid, target.id));
+    grid.appendChild(button);
+  }
+  if (!grid.children.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No other living players are available.";
+    grid.appendChild(empty);
+  }
+  setVisible("jesterOverlay", true);
+}
+
+async function performJesterShapeshift(jesterId, targetId) {
+  const now = Date.now();
+  const jester = state.players[jesterId];
+  const target = state.players[targetId];
+  const role = jesterId === state.uid ? state.secret?.role : state.allSecrets[jesterId]?.role;
+  if (role !== "Jester" || !jester?.alive || !target?.alive || targetId === jesterId || currentPhase() !== "game") return false;
+  if (Number(jester.shapeshiftUntil || 0) > now || Number(jester.shapeshiftReadyAt || 0) > now) return false;
+
+  if (jesterId === state.uid) {
+    const cooldown = await runTransaction(ref(db, roomPath(`players/${jesterId}/shapeshiftReadyAt`)), (current) => {
+      if (Number(current || 0) > now) return;
+      return now + 35000;
+    });
+    if (!cooldown.committed) return false;
+  }
+
+  await update(ref(db, roomPath(`players/${jesterId}`)), {
+    shapeshiftTargetId: targetId,
+    shapeshiftUntil: now + 10000,
+    shapeshiftReadyAt: now + 35000,
+  });
+  if (jesterId === state.uid) {
+    setVisible("jesterOverlay", false);
+    showToast(`Shapeshifted into ${target.name || "another player"} for 10 seconds`);
+  }
+  return true;
+}
+
+$("closeJesterButton").addEventListener("click", () => setVisible("jesterOverlay", false));
 
 function toggleControlsPanel() {
   if (!["game", "meeting", "starting"].includes(currentPhase())) return;
@@ -2288,7 +2477,330 @@ function renderCurrentTaskGame() {
   else if (game.type === "shoot") renderShootPuzzle();
   else if (game.type === "sort") renderSortPuzzle();
   else if (game.type === "draw") renderDrawPuzzle();
+  else if (game.type === "mirrors") renderMirrorPuzzle();
+  else if (game.type === "cups") renderRuneCupPuzzle();
+  else if (game.type === "letters") renderRoyalLetterPuzzle();
+  else if (game.type === "treasury") renderTreasuryPuzzle();
   else renderSequencePuzzle();
+}
+
+function mirrorTurn(direction, mirror) {
+  const slash = { right: "up", left: "down", up: "right", down: "left" };
+  const backslash = { right: "down", left: "up", up: "left", down: "right" };
+  return (mirror === "/" ? slash : backslash)[direction];
+}
+
+function simulateMirrorBeam(game) {
+  let x = -1;
+  let y = 2;
+  let direction = "right";
+  const visited = [];
+  const seen = new Set();
+  const step = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] };
+  for (let count = 0; count < 80; count += 1) {
+    const [dx, dy] = step[direction];
+    x += dx;
+    y += dy;
+    if (x < 0 || y < 0 || x >= 5 || y >= 4) {
+      return { visited, solved: x === 5 && y === 1 && direction === "right" };
+    }
+    const key = `${x},${y},${direction}`;
+    if (seen.has(key)) return { visited, solved: false };
+    seen.add(key);
+    const mirror = game.mirrors[`${x},${y}`];
+    visited.push({ x, y, direction, mirror });
+    if (mirror) direction = mirrorTurn(direction, mirror);
+  }
+  return { visited, solved: false };
+}
+
+function renderMirrorPuzzle() {
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  if (!game.mirrors) {
+    const solution = {
+      "1,2": "\\",
+      "1,3": "\\",
+      "3,3": "/",
+      "3,1": "/",
+    };
+    game.mirrors = {
+      ...solution,
+      "0,0": Math.random() < .5 ? "/" : "\\",
+      "2,0": Math.random() < .5 ? "/" : "\\",
+      "4,2": Math.random() < .5 ? "/" : "\\",
+    };
+    for (const key of Object.keys(game.mirrors)) {
+      if (Math.random() < .55) game.mirrors[key] = game.mirrors[key] === "/" ? "\\" : "/";
+    }
+    // Never let the puzzle spawn already solved.
+    if (simulateMirrorBeam(game).solved) {
+      game.mirrors["1,2"] = game.mirrors["1,2"] === "/" ? "\\" : "/";
+    }
+  }
+  $("taskGameInstruction").textContent = "Rotate the mirrors until the signal beam reaches the distant beacon.";
+  const result = simulateMirrorBeam(game);
+  const beamCells = new Map(result.visited.map((step) => [`${step.x},${step.y}`, step]));
+
+  const wrap = document.createElement("div");
+  wrap.className = "mirror-game";
+  const boardWrap = document.createElement("div");
+  boardWrap.className = "mirror-board-wrap";
+  const source = document.createElement("div");
+  source.className = "mirror-endpoint";
+  source.textContent = "🔦";
+  const grid = document.createElement("div");
+  grid.className = "mirror-grid";
+  for (let y = 0; y < 4; y += 1) {
+    for (let x = 0; x < 5; x += 1) {
+      const key = `${x},${y}`;
+      const mirror = game.mirrors[key];
+      const beamStep = beamCells.get(key);
+      if (mirror) {
+        const button = document.createElement("button");
+        button.className = `mirror-piece${beamStep ? " beam" : ""}`;
+        button.textContent = mirror;
+        button.addEventListener("click", () => {
+          game.mirrors[key] = game.mirrors[key] === "/" ? "\\" : "/";
+          renderMirrorPuzzle();
+        });
+        grid.appendChild(button);
+      } else {
+        const cell = document.createElement("div");
+        cell.className = `mirror-cell${beamStep ? " beam" : ""}`;
+        cell.textContent = beamStep ? "•" : "";
+        grid.appendChild(cell);
+      }
+    }
+  }
+  const beacon = document.createElement("div");
+  beacon.className = "mirror-endpoint";
+  beacon.textContent = result.solved ? "✨" : "🏰";
+  boardWrap.append(source, grid, beacon);
+  const key = document.createElement("div");
+  key.className = "mirror-key";
+  key.innerHTML = "<span>/ turns the beam</span><span>\\ turns the beam</span>";
+  wrap.append(boardWrap, key);
+  area.appendChild(wrap);
+  setTaskGameStatus(result.solved ? "The beacon is lit!" : "Click a mirror to rotate it");
+  if (result.solved) setTimeout(() => state.taskGame === game && finishTaskPuzzle(), 450);
+}
+
+function renderRuneCupPuzzle() {
+  clearTaskGameTimer();
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  $("taskGameInstruction").textContent = "Watch the glowing rune, follow its cup through the scramble, then choose the correct cup.";
+  game.cupRuneId = Math.floor(Math.random() * 4);
+  game.cupSlots = [0, 1, 2, 3];
+  game.cupsClickable = false;
+
+  const board = document.createElement("div");
+  board.className = "cup-board";
+  const tableLine = document.createElement("div");
+  tableLine.className = "cup-table-line";
+  board.appendChild(tableLine);
+  const cups = [];
+  const updateCups = (showRune = false) => {
+    cups.forEach((button, cupId) => {
+      const slot = game.cupSlots.indexOf(cupId);
+      const tx = slot * 100;
+      button.style.setProperty("--cup-transform", `translateX(${tx}px)`);
+      button.style.transform = `translateX(${tx}px)`;
+      const revealing = showRune && cupId === game.cupRuneId;
+      button.classList.toggle("revealing", revealing);
+      const rune = button.querySelector(".rune-cup-rune");
+      rune.classList.toggle("hidden-rune", !revealing);
+    });
+  };
+  for (let cupId = 0; cupId < 4; cupId += 1) {
+    const button = document.createElement("button");
+    button.className = "rune-cup";
+    const rune = document.createElement("span");
+    rune.className = "rune-cup-rune";
+    rune.textContent = "✦";
+    const shell = document.createElement("span");
+    shell.className = "rune-cup-shell";
+    shell.textContent = "♜";
+    button.append(rune, shell);
+    button.addEventListener("click", () => {
+      if (!game.cupsClickable) return;
+      game.cupsClickable = false;
+      if (cupId === game.cupRuneId) {
+        updateCups(true);
+        setTaskGameStatus("You found the hidden rune!");
+        setTimeout(() => state.taskGame === game && finishTaskPuzzle(), 450);
+      } else {
+        updateCups(true);
+        setTaskGameStatus("Wrong cup — watch the rune again");
+        state.taskGameTimer = setTimeout(() => state.taskGame === game && renderRuneCupPuzzle(), 950);
+      }
+    });
+    board.appendChild(button);
+    cups.push(button);
+  }
+  area.appendChild(board);
+  updateCups(true);
+  setTaskGameStatus("Remember which cup hides the rune");
+
+  state.taskGameTimer = setTimeout(() => {
+    if (state.taskGame !== game) return;
+    updateCups(false);
+    let shuffleStep = 0;
+    state.taskGameTimer = setInterval(() => {
+      if (state.taskGame !== game) return;
+      const a = Math.floor(Math.random() * 4);
+      let b = Math.floor(Math.random() * 4);
+      if (b === a) b = (b + 1) % 4;
+      [game.cupSlots[a], game.cupSlots[b]] = [game.cupSlots[b], game.cupSlots[a]];
+      updateCups(false);
+      shuffleStep += 1;
+      setTaskGameStatus(`Scrambling… ${shuffleStep} / 9`);
+      if (shuffleStep >= 9) {
+        clearTaskGameTimer();
+        game.cupsClickable = true;
+        setTaskGameStatus("Choose the cup hiding the rune");
+      }
+    }, 340);
+  }, 1250);
+}
+
+function renderRoyalLetterPuzzle() {
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  const crests = [
+    { id: "lion", icon: "🦁", label: "Lion" },
+    { id: "crown", icon: "♛", label: "Crown" },
+    { id: "rose", icon: "🌹", label: "Rose" },
+    { id: "sword", icon: "⚔", label: "Sword" },
+  ];
+  if (!game.letterOrder) {
+    game.letterOrder = shuffle(crests.map((crest) => crest.id));
+    game.sealOrder = shuffle(crests.map((crest) => crest.id));
+    game.sealedLetters = {};
+    game.selectedSeal = "";
+  }
+  $("taskGameInstruction").textContent = "Match each wax seal to the crest printed on its royal letter. Drag, or tap a seal and then a letter.";
+  const wrap = document.createElement("div");
+  wrap.className = "letter-game";
+  const letters = document.createElement("div");
+  letters.className = "letter-row";
+  const seals = document.createElement("div");
+  seals.className = "seal-tray";
+  const crestFor = (id) => crests.find((crest) => crest.id === id);
+
+  const placeSeal = (letterId, sealId) => {
+    if (!sealId || game.sealedLetters[letterId]) return;
+    if (letterId !== sealId) {
+      setTaskGameStatus("That seal does not match the letter's crest");
+      game.selectedSeal = "";
+      renderRoyalLetterPuzzle();
+      return;
+    }
+    game.sealedLetters[letterId] = sealId;
+    game.selectedSeal = "";
+    const done = Object.keys(game.sealedLetters).length;
+    setTaskGameStatus(`${done} / 4 letters sealed`);
+    if (done >= 4) finishTaskPuzzle();
+    else renderRoyalLetterPuzzle();
+  };
+
+  for (const letterId of game.letterOrder) {
+    const crest = crestFor(letterId);
+    const button = document.createElement("button");
+    button.className = `royal-letter${game.sealedLetters[letterId] ? " sealed" : ""}`;
+    button.innerHTML = `<strong>${game.sealedLetters[letterId] ? "🔴" : crest.icon}</strong><small>${crest.label.toUpperCase()} CREST</small>`;
+    button.disabled = Boolean(game.sealedLetters[letterId]);
+    button.addEventListener("click", () => placeSeal(letterId, game.selectedSeal));
+    button.addEventListener("dragover", (event) => event.preventDefault());
+    button.addEventListener("drop", (event) => {
+      event.preventDefault();
+      placeSeal(letterId, event.dataTransfer?.getData("text/plain") || game.selectedSeal);
+    });
+    letters.appendChild(button);
+  }
+
+  for (const sealId of game.sealOrder) {
+    if (Object.values(game.sealedLetters).includes(sealId)) continue;
+    const crest = crestFor(sealId);
+    const button = document.createElement("button");
+    button.className = `wax-seal${game.selectedSeal === sealId ? " selected" : ""}`;
+    button.textContent = crest.icon;
+    button.draggable = true;
+    button.addEventListener("dragstart", (event) => event.dataTransfer?.setData("text/plain", sealId));
+    button.addEventListener("click", () => {
+      game.selectedSeal = game.selectedSeal === sealId ? "" : sealId;
+      renderRoyalLetterPuzzle();
+    });
+    seals.appendChild(button);
+  }
+  wrap.append(letters, seals);
+  area.appendChild(wrap);
+}
+
+function renderTreasuryPuzzle() {
+  const game = state.taskGame;
+  const area = $("taskGameArea");
+  area.replaceChildren();
+  const pieces = [
+    { id: "copper", icon: "🟤", value: 1, label: "Copper" },
+    { id: "silver", icon: "⚪", value: 2, label: "Silver" },
+    { id: "emerald", icon: "💚", value: 3, label: "Emerald" },
+    { id: "ruby", icon: "♦", value: 4, label: "Ruby" },
+    { id: "gold", icon: "🟡", value: 5, label: "Gold" },
+    { id: "crown", icon: "👑", value: 7, label: "Crown" },
+  ];
+  if (!game.treasuryTarget) {
+    const chosen = shuffle(pieces).slice(0, 2 + Math.floor(Math.random() * 3));
+    game.treasuryTarget = chosen.reduce((sum, piece) => sum + piece.value, 0);
+    game.treasurySelected = {};
+  }
+  const total = pieces.reduce((sum, piece) => sum + (game.treasurySelected[piece.id] ? piece.value : 0), 0);
+  $("taskGameInstruction").textContent = `Place treasure worth exactly ${game.treasuryTarget} on the scale.`;
+
+  const wrap = document.createElement("div");
+  wrap.className = "treasury-game";
+  const scale = document.createElement("div");
+  scale.className = "treasury-scale";
+  const targetPan = document.createElement("div");
+  targetPan.className = "scale-pan";
+  targetPan.innerHTML = `<span>🏰 Royal order</span><strong>${game.treasuryTarget}</strong>`;
+  const post = document.createElement("div");
+  post.className = "scale-post";
+  const selectedPan = document.createElement("div");
+  selectedPan.className = "scale-pan";
+  selectedPan.innerHTML = `<span>⚖ Your treasure</span><strong>${total}</strong>`;
+  scale.append(targetPan, post, selectedPan);
+
+  const tray = document.createElement("div");
+  tray.className = "treasure-pieces";
+  for (const piece of pieces) {
+    const button = document.createElement("button");
+    button.className = `treasure-piece${game.treasurySelected[piece.id] ? " selected" : ""}`;
+    button.innerHTML = `<span>${piece.icon}</span><small>${piece.label} · ${piece.value}</small>`;
+    button.addEventListener("click", () => {
+      game.treasurySelected[piece.id] = !game.treasurySelected[piece.id];
+      renderTreasuryPuzzle();
+    });
+    tray.appendChild(button);
+  }
+  const submit = makePuzzleButton("Weigh the treasure", () => {
+    const current = pieces.reduce((sum, piece) => sum + (game.treasurySelected[piece.id] ? piece.value : 0), 0);
+    if (current === game.treasuryTarget) {
+      setTaskGameStatus("The royal treasury is perfectly balanced!");
+      finishTaskPuzzle();
+    } else if (current < game.treasuryTarget) {
+      setTaskGameStatus(`Too light by ${game.treasuryTarget - current}`);
+    } else {
+      setTaskGameStatus(`Too heavy by ${current - game.treasuryTarget}`);
+    }
+  }, "primary");
+  wrap.append(scale, tray, submit);
+  area.appendChild(wrap);
+  setTaskGameStatus(total ? `Current weight: ${total}` : "Select treasure pieces, then weigh them");
 }
 
 function renderSequencePuzzle() {
@@ -4204,6 +4716,9 @@ async function finalizeMeeting() {
       if (role === "Chameleon") {
         winnerAfter = "loyalists";
         winnerText = "The council exposed and banished the Chameleon.";
+      } else if (role === "Jester") {
+        winnerAfter = "jester";
+        winnerText = `${ejected?.name || "The Jester"} fooled the entire council and won by being banished.`;
       }
     }
 
@@ -4294,6 +4809,8 @@ async function resetToLobby() {
       updates[roomPath(`players/${id}/completedTasks`)] = null;
       updates[roomPath(`players/${id}/shape`)] = null;
       updates[roomPath(`players/${id}/seanceUsed`)] = false;
+      updates[roomPath(`players/${id}/shapeshiftUntil`)] = 0;
+      updates[roomPath(`players/${id}/shapeshiftTargetId`)] = null;
       updates[roomPath(`players/${id}/x`)] = 590 + Math.random() * 100;
       updates[roomPath(`players/${id}/y`)] = 555 + Math.random() * 70;
     }
@@ -4436,8 +4953,8 @@ function updateInteractionPrompt() {
         const reportText = cooldownRemaining > 0
           ? `Report locked: ${Math.ceil(cooldownRemaining / 1000)}s`
           : `F: Report ${body.victimName}`;
-        if (state.secret?.role === "Chef" && !me.reviveUsed) text = `${reportText}  •  E: Revive`;
-        else if (state.secret?.role === "Sorcerer" && !me.seanceUsed) text = `${reportText}  •  R: Commune`;
+        if (state.secret?.role === "Chef" && !me.reviveUsed) text = `${reportText}  •  1: Revive`;
+        else if (state.secret?.role === "Sorcerer" && !me.seanceUsed) text = `${reportText}  •  2: Commune`;
         else text = reportText;
       } else if (task) {
         text = `F: Solve puzzle — ${task.name}`;
@@ -4588,6 +5105,7 @@ window.addEventListener("keydown", (event) => {
   if (key === "escape") {
     setVisible("sewerOverlay", false);
     setVisible("sabotageOverlay", false);
+    setVisible("jesterOverlay", false);
     setVisible("customizeOverlay", false);
     if (state.chatOpen) openChat();
   }
@@ -4865,6 +5383,28 @@ function patternRect(context, x, y, w, h, type) {
       context.arc(x + 40 + (i * 48) % Math.max(48, w - 80), y + 50 + (i * 34) % Math.max(40, h - 90), 18 + (i % 3) * 5, 0, Math.PI * 2);
       context.fill();
     }
+  } else if (type === "tower") {
+    context.strokeStyle = "rgba(180,235,255,.13)";
+    context.lineWidth = 2;
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    for (const radius of [35, 70, 105]) {
+      context.beginPath(); context.arc(cx, cy, radius, 0, Math.PI * 2); context.stroke();
+    }
+    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+      context.beginPath(); context.moveTo(cx, cy); context.lineTo(cx + Math.cos(angle) * Math.max(w, h), cy + Math.sin(angle) * Math.max(w, h)); context.stroke();
+    }
+  } else if (type === "royal") {
+    context.fillStyle = "rgba(255,224,138,.10)";
+    for (let py = y + 18; py < y + h; py += 42) {
+      for (let px = x + 18; px < x + w; px += 42) {
+        context.save();
+        context.translate(px, py);
+        context.rotate(Math.PI / 4);
+        context.fillRect(-9, -9, 18, 18);
+        context.restore();
+      }
+    }
   }
   context.restore();
 }
@@ -5104,6 +5644,33 @@ function drawRoomDecor(context) {
   context.beginPath(); context.arc(1575 * s, 975 * s, 60 * s, 0, Math.PI * 2); context.fill();
   context.fillStyle = "#6fb9d6";
   context.beginPath(); context.arc(1575 * s, 975 * s, 28 * s, 0, Math.PI * 2); context.fill();
+
+  // Watch Tower telescope, signal table, and narrow windows
+  context.fillStyle = "#253a47";
+  drawRoundedRect(context, 1950 * s, 125 * s, 105 * s, 55 * s, 10); context.fill();
+  context.strokeStyle = "#a9dff2";
+  context.lineWidth = 8;
+  context.beginPath(); context.moveTo(2085 * s, 150 * s); context.lineTo(2215 * s, 115 * s); context.stroke();
+  context.fillStyle = "#d5b969";
+  context.beginPath(); context.arc(2215 * s, 115 * s, 15 * s, 0, Math.PI * 2); context.fill();
+  context.strokeStyle = "rgba(187,234,255,.55)";
+  context.lineWidth = 5;
+  for (let i = 0; i < 3; i += 1) {
+    context.beginPath(); context.moveTo((1955 + i * 120) * s, 260 * s); context.lineTo((2015 + i * 120) * s, 260 * s); context.stroke();
+  }
+
+  // King's Quarters bed, writing desk, and treasure chest
+  context.fillStyle = "#5c2338";
+  drawRoundedRect(context, 1945 * s, 500 * s, 175 * s, 95 * s, 14); context.fill();
+  context.fillStyle = "#e6d3a2";
+  drawRoundedRect(context, 1958 * s, 512 * s, 62 * s, 35 * s, 10); context.fill();
+  context.fillStyle = "#79502d";
+  context.fillRect(2155 * s, 500 * s, 110 * s, 46 * s);
+  context.fillStyle = "#ad7a30";
+  drawRoundedRect(context, 2145 * s, 625 * s, 120 * s, 62 * s, 9); context.fill();
+  context.strokeStyle = "#f0d478";
+  context.lineWidth = 4;
+  context.strokeRect(2148 * s, 628 * s, 114 * s, 56 * s);
 
   drawTorch(context, 735 * s, 390 * s);
   drawTorch(context, 1165 * s, 760 * s);
@@ -5365,6 +5932,27 @@ function drawRoleTexture(context, role, now = Date.now()) {
     context.strokeStyle = "#9d77c7";
     context.lineWidth = 3;
     context.beginPath(); context.moveTo(28, 10); context.lineTo(34, 31); context.stroke();
+  } else if (role === "Jester") {
+    context.fillStyle = "#7138a6";
+    context.strokeStyle = "#d6a7ff";
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(-20, -43);
+    context.quadraticCurveTo(-24, -67, -5, -52);
+    context.quadraticCurveTo(0, -76, 7, -52);
+    context.quadraticCurveTo(25, -67, 19, -42);
+    context.closePath();
+    context.fill();
+    context.stroke();
+    context.fillStyle = "#f0c94b";
+    for (const point of [[-20,-45],[0,-55],[20,-45]]) {
+      context.beginPath(); context.arc(point[0], point[1], 4, 0, Math.PI * 2); context.fill();
+    }
+    context.fillStyle = "rgba(124,255,151,.72)";
+    context.fillRect(-20, 3, 40, 6);
+    context.strokeStyle = "#d6a7ff";
+    context.lineWidth = 3;
+    context.beginPath(); context.moveTo(-18, 5); context.lineTo(18, 24); context.stroke();
   } else if (role === "Time Traveler") {
     context.fillStyle = "rgba(67,231,207,.8)";
     context.fillRect(-19, -10, 38, 5);
@@ -5478,9 +6066,23 @@ function drawPlayers(context, phase) {
     const y = isMe ? state.localPos.y : (render?.y ?? player.y);
     if (phase !== "lobby" && player.invisibleUntil > now && !isMe) continue;
 
+    const disguiseTarget = Number(player.shapeshiftUntil || 0) > now
+      ? state.players[player.shapeshiftTargetId]
+      : null;
+    const displayPlayer = disguiseTarget?.inMatch
+      ? {
+          ...player,
+          color: disguiseTarget.color,
+          outfit: disguiseTarget.outfit,
+          accessory: disguiseTarget.accessory,
+          shape: disguiseTarget.shape,
+        }
+      : player;
+    const displayName = disguiseTarget?.inMatch ? (disguiseTarget.name || "Unknown") : (player.name || "Unknown");
+
     context.save();
     context.translate(x, y);
-    drawCourtier(context, player, isMe, player.alive, player.invisibleUntil > now && isMe ? 0.3 : 1);
+    drawCourtier(context, displayPlayer, isMe, player.alive, player.invisibleUntil > now && isMe ? 0.3 : 1);
     if (isMe && phase !== "lobby") drawRoleTexture(context, state.secret?.role, now);
     if (isMe && state.rewindFlashUntil > now) {
       const radius = 34 + (state.rewindFlashUntil - now) / 28;
@@ -5491,7 +6093,7 @@ function drawPlayers(context, phase) {
     context.fillStyle = "#ece5d1";
     context.font = "700 13px system-ui";
     context.textAlign = "center";
-    context.fillText(player.name || "Unknown", 0, -56);
+    context.fillText(displayName, 0, -56);
     const seanceActive = state.seance
       && state.seance.sorcererId === id
       && state.seance.phase !== "complete"
@@ -6354,6 +6956,16 @@ async function runBotsInGame() {
       if (dartTarget && distance(bot, dartTarget) <= 280) {
         await shootSorcererDart(bot.id, dartTarget.id);
         brain.nextDartAt = now + 4500;
+      }
+    }
+
+    if (role === "Jester" && Number(bot.shapeshiftReadyAt || 0) <= now && Number(bot.shapeshiftUntil || 0) <= now && Math.random() < 0.01) {
+      const disguiseTargets = alivePlayers().filter((player) => player.id !== bot.id);
+      const targetPlayer = disguiseTargets[Math.floor(Math.random() * disguiseTargets.length)];
+      if (targetPlayer) {
+        updates[roomPath(`players/${bot.id}/shapeshiftTargetId`)] = targetPlayer.id;
+        updates[roomPath(`players/${bot.id}/shapeshiftUntil`)] = now + 10000;
+        updates[roomPath(`players/${bot.id}/shapeshiftReadyAt`)] = now + 35000;
       }
     }
 
